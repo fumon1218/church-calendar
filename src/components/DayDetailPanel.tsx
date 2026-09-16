@@ -323,7 +323,27 @@ export const DayDetailPanel: React.FC<DayDetailPanelProps> = ({
                       </span>
                     </div>
 
-                    {(ev.time || ev.memo) && (
+                    {(ev.praiseSong || ev.startHymn) && (
+                      <div className="mt-1.5 p-2 rounded-lg bg-[#094E85]/10 border border-[#094E85]/20 text-[11px] space-y-0.5">
+                        {ev.praiseSong && (
+                          <div className="font-bold text-[#094E85] dark:text-[#64B5F6] flex items-center gap-1 flex-wrap">
+                            <span>🎵 찬양곡: {ev.praiseSong}</span>
+                            {ev.praiseSubtitle && (
+                              <span className="font-medium text-[10px] text-[var(--ink-soft)]">
+                                ({ev.praiseSubtitle})
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {ev.startHymn && (
+                          <div className="text-[10px] font-medium text-[var(--ink-soft)]">
+                            시작찬송: <span className="font-bold text-[var(--ink)]">{ev.startHymn}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {(ev.time || (ev.memo && !ev.praiseSong)) && (
                       <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-[var(--ink-soft)]">
                         {ev.time && (
                           <span className="flex items-center gap-1 font-mono text-[10px]">
@@ -331,7 +351,7 @@ export const DayDetailPanel: React.FC<DayDetailPanelProps> = ({
                             {ev.time}
                           </span>
                         )}
-                        {ev.memo && <span>{ev.memo}</span>}
+                        {ev.memo && !ev.praiseSong && <span>{ev.memo}</span>}
                       </div>
                     )}
                   </div>

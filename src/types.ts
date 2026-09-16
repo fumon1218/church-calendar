@@ -9,6 +9,9 @@ export interface ChurchEvent {
   memo?: string;
   location?: string;
   isImportant?: boolean;
+  praiseSong?: string; // 찬양곡 (예: "은혜찬송가 52장", "찬송가 404장", "악보곡")
+  praiseSubtitle?: string; // 부제 (예: "망망한 인생의 거친 바다에", "주를 보라")
+  startHymn?: string; // 시작찬송 (예: "은찬 69, 91", "찬 408, 411")
 }
 
 export interface CategoryMeta {

@@ -13,7 +13,8 @@ import {
   Settings, 
   Sun, 
   Moon,
-  Search
+  Search,
+  Music
 } from 'lucide-react';
 import { ViewMode, ChurchConfig } from '../types';
 import { ChurchLogo } from './ChurchLogo';
@@ -34,6 +35,7 @@ interface HeaderProps {
   onOpenNewEvent: () => void;
   onOpenAIPhoto: () => void;
   onOpenAIText: () => void;
+  onOpenPraiseTable: () => void;
   onOpenPrint: () => void;
   onExportICS: () => void;
   onOpenSettings: () => void;
@@ -55,6 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNewEvent,
   onOpenAIPhoto,
   onOpenAIText,
+  onOpenPraiseTable,
   onOpenPrint,
   onExportICS,
   onOpenSettings,
@@ -283,6 +286,15 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <FileText className="w-3.5 h-3.5" />
               <span>AI 공지 텍스트</span>
+            </button>
+
+            <button
+              onClick={onOpenPraiseTable}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-[#094E85]/15 hover:bg-[#094E85]/25 text-[#094E85] dark:text-[#64B5F6] border border-[#094E85]/30 transition-colors shadow-xs"
+              title="월별 찬양곡 표 (주보 양식) 확인 및 등록"
+            >
+              <Music className="w-3.5 h-3.5" />
+              <span>월별 찬양표</span>
             </button>
           </div>
 
