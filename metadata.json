@@ -1,0 +1,6 @@
+{
+  "name": "교회 부서 일정 달력",
+  "description": "동해교회 부서 일정 스케쥴러의 발전된 버전으로, 월간/주간/아젠다 뷰, 부서별 필터링, AI 주보 사진 및 공지문 일정 자동 인식, iCal 내보내기 및 주보 인쇄 기능을 제공합니다.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

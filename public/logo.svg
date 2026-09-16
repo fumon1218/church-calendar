@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- 3D Spherical Radial Gradient for the Globe -->
+    <radialGradient id="globeSphere" cx="45%" cy="35%" r="65%" fx="42%" fy="30%">
+      <stop offset="0%" stop-color="#6DB8DD" />
+      <stop offset="22%" stop-color="#3A92C5" />
+      <stop offset="50%" stop-color="#1E65A4" />
+      <stop offset="78%" stop-color="#104279" />
+      <stop offset="100%" stop-color="#082348" />
+    </radialGradient>
+
+    <!-- Clip path to keep continents and grid inside the globe circle -->
+    <clipPath id="globeClip">
+      <circle cx="216" cy="270" r="192" />
+    </clipPath>
+
+    <!-- Subtle inner shadow for globe depth -->
+    <filter id="innerGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite operator="out" in2="SourceGraphic" result="inverse" />
+      <feFlood flood-color="#041226" flood-opacity="0.5" result="color" />
+      <feComposite operator="in" in2="inverse" result="shadow" />
+      <feComposite operator="over" in2="SourceGraphic" />
+    </filter>
+  </defs>
+
+  <g id="globe-group">
+    <!-- Globe Base Circle -->
+    <circle cx="216" cy="270" r="192" fill="url(#globeSphere)" />
+
+    <!-- Clipped Continents & Grid Lines -->
+    <g clip-path="url(#globeClip)">
+      <!-- Continents Silhouette (Subtle Dark Navy) -->
+      <!-- East Asia / Korea / China -->
+      <path d="M 175 190 Q 185 180 205 185 Q 218 190 220 205 Q 222 215 212 225 Q 198 232 188 220 Q 180 226 172 235 Q 160 240 152 230 Q 140 232 135 245 Q 120 255 110 240 Q 105 215 125 195 Q 145 185 160 195 Z"
+            fill="#082042" opacity="0.48" />
+      
+      <!-- Korean Peninsula & Japan Arcs -->
+      <path d="M 215 210 Q 224 218 222 230 Q 216 238 212 232 Q 212 222 215 210 Z"
+            fill="#082042" opacity="0.65" />
+      <path d="M 235 205 Q 248 215 250 230 Q 242 245 235 250 Q 230 240 236 225 Z"
+            fill="#082042" opacity="0.55" />
+
+      <!-- Southeast Asia Archipelago -->
+      <path d="M 130 270 Q 145 265 160 275 Q 155 290 142 295 Q 132 285 130 270 Z
+               M 165 290 Q 180 285 192 300 Q 185 315 170 310 Z"
+            fill="#082042" opacity="0.45" />
+
+      <!-- Australia / Oceania -->
+      <path d="M 188 355 Q 215 345 240 360 Q 255 385 245 410 Q 220 425 195 415 Q 180 395 182 375 Z"
+            fill="#082042" opacity="0.5" />
+
+      <!-- Eurasia / Western Arc -->
+      <path d="M 50 180 Q 75 160 110 170 Q 125 185 115 210 Q 90 220 70 210 Q 55 200 50 180 Z
+               M 40 225 Q 65 220 80 245 Q 75 270 55 280 Q 35 265 40 225 Z"
+            fill="#082042" opacity="0.42" />
+
+      <!-- Longitude Meridians (Latitude & Longitude Grid Lines) -->
+      <g stroke="#62B9E4" stroke-width="1.6" fill="none" opacity="0.6">
+        <!-- Central vertical meridian -->
+        <line x1="216" y1="78" x2="216" y2="462" />
+
+        <!-- Western meridians -->
+        <path d="M 216 78 C 160 170, 160 370, 216 462" />
+        <path d="M 216 78 C 110 170, 110 370, 216 462" />
+        <path d="M 216 78 C 60 170, 60 370, 216 462" />
+        <path d="M 216 78 C 15 170, 15 370, 216 462" />
+
+        <!-- Eastern meridians -->
+        <path d="M 216 78 C 272 170, 272 370, 216 462" />
+        <path d="M 216 78 C 322 170, 322 370, 216 462" />
+        <path d="M 216 78 C 372 170, 372 370, 216 462" />
+        <path d="M 216 78 C 417 170, 417 370, 216 462" />
+
+        <!-- Latitude Parallels (Curving horizontal lines) -->
+        <path d="M 24 270 Q 216 308 408 270" />
+        <path d="M 38 215 Q 216 250 394 215" />
+        <path d="M 72 160 Q 216 192 360 160" />
+        <path d="M 125 115 Q 216 142 307 115" />
+
+        <path d="M 38 325 Q 216 366 394 325" />
+        <path d="M 72 380 Q 216 422 360 380" />
+        <path d="M 125 425 Q 216 467 307 425" />
+      </g>
+    </g>
+
+    <!-- Globe Outer Border Ring -->
+    <circle cx="216" cy="270" r="192" fill="none" stroke="#0B264A" stroke-width="3.5" />
+  </g>
+
+  <!-- Holy Spirit Peace Dove Group -->
+  <g id="dove-group">
+    <!-- 1. Back Wing (Far Wing behind the dove) -->
+    <g id="back-wing">
+      <!-- Wing main silhouette -->
+      <path d="M 288 185
+               C 305 140, 345 95, 378 72
+               C 382 70, 386 73, 384 78
+               C 378 92, 375 105, 386 110
+               C 392 113, 396 118, 393 125
+               C 386 138, 385 148, 398 152
+               C 404 154, 407 160, 403 167
+               C 394 182, 392 192, 404 198
+               C 410 201, 411 208, 407 214
+               C 396 228, 393 238, 402 248
+               C 405 252, 402 258, 396 258
+               C 375 258, 350 252, 335 242
+               C 315 228, 298 208, 288 185 Z"
+            fill="#FFFFFF" stroke="#0B264A" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round" />
+
+      <!-- Internal feather separation lines for Back Wing -->
+      <path d="M 368 95 C 348 125, 332 155, 320 185
+               M 374 130 C 356 155, 342 180, 332 205
+               M 382 170 C 365 190, 352 210, 344 228
+               M 388 214 C 374 228, 362 240, 354 246"
+            fill="none" stroke="#0B264A" stroke-width="2.8" stroke-linecap="round" />
+    </g>
+
+    <!-- 2. Dove Body, Head, Neck, Chest, Tail Base -->
+    <g id="body-and-tail">
+      <!-- Tail Spread (6 Primary Fan Feathers towards right) -->
+      <!-- Tail Main Path -->
+      <path d="M 330 262
+               C 355 262, 420 248, 468 245
+               C 478 244, 484 250, 482 258
+               C 480 265, 470 272, 486 280
+               C 493 284, 493 293, 487 298
+               C 478 307, 468 310, 481 322
+               C 487 328, 483 338, 474 341
+               C 460 346, 452 348, 458 360
+               C 462 368, 453 376, 442 373
+               C 426 369, 412 362, 400 350
+               C 378 368, 355 378, 328 358
+               C 310 344, 305 325, 308 302
+               C 278 300, 245 288, 225 265
+               C 210 248, 204 232, 206 226
+               C 205 224, 200 224, 196 225
+               C 192 226, 189 223, 191 220
+               C 194 216, 202 212, 208 212
+               C 212 212, 218 208, 222 205
+               C 230 198, 240 196, 252 202
+               C 265 208, 276 222, 285 240
+               C 298 255, 312 262, 330 262 Z"
+            fill="#FFFFFF" stroke="#0B264A" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round" />
+
+      <!-- Head & Beak Detail refinement -->
+      <!-- Sharp delicate beak -->
+      <path d="M 207 214 L 191 221 L 206 226 Z"
+            fill="#FFFFFF" stroke="#0B264A" stroke-width="3.2" stroke-linejoin="round" />
+      <line x1="192" y1="221" x2="204" y2="221" stroke="#0B264A" stroke-width="2.2" stroke-linecap="round" />
+
+      <!-- Dove Eye -->
+      <circle cx="218" cy="216" r="3.2" fill="#0B264A" />
+
+      <!-- Tail Feather Ribs / Contour Lines -->
+      <path d="M 338 274 C 385 268, 435 258, 472 254
+               M 342 284 C 392 280, 442 278, 476 288
+               M 345 295 C 395 296, 440 305, 470 327
+               M 342 308 C 385 315, 425 330, 450 354
+               M 336 322 C 370 332, 400 345, 426 360
+               M 330 338 C 355 348, 375 358, 392 364"
+            fill="none" stroke="#0B264A" stroke-width="2.8" stroke-linecap="round" />
+    </g>
+
+    <!-- 3. Front Wing (Raised high in majestic flight) -->
+    <g id="front-wing">
+      <!-- Main Front Wing Silhouette -->
+      <path d="M 252 202
+               C 255 170, 268 105, 276 45
+               C 278 30, 286 22, 292 25
+               C 298 28, 306 42, 304 55
+               C 301 70, 312 72, 318 80
+               C 324 88, 320 98, 318 108
+               C 315 120, 325 125, 330 134
+               C 335 142, 330 152, 327 162
+               C 324 175, 334 180, 338 190
+               C 342 200, 335 210, 330 220
+               C 325 230, 332 238, 335 248
+               C 337 255, 330 262, 322 260
+               C 305 255, 292 245, 280 232
+               C 268 218, 258 208, 252 202 Z"
+            fill="#FFFFFF" stroke="#0B264A" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" />
+
+      <!-- Wing Flight Feathers Long Contours (Primary Flight Feathers) -->
+      <g stroke="#0B264A" stroke-width="2.8" stroke-linecap="round" fill="none">
+        <path d="M 288 45 C 285 95, 280 148, 275 195" />
+        <path d="M 302 70 C 298 115, 292 165, 286 210" />
+        <path d="M 314 98 C 308 140, 302 185, 296 225" />
+        <path d="M 324 125 C 318 165, 312 205, 306 238" />
+        <path d="M 326 155 C 322 190, 318 222, 314 248" />
+        <path d="M 330 185 C 326 212, 322 235, 320 252" />
+
+        <!-- Wing Covert Feather Scales (Soft rounded scalloped arcs on inner wing) -->
+        <path d="M 270 125 C 265 135, 266 145, 274 150 C 268 158, 270 168, 278 172 C 272 180, 274 190, 282 194" />
+        <path d="M 278 110 C 275 120, 278 130, 286 135 C 282 142, 284 152, 292 156 C 288 164, 290 174, 298 178" />
+      </g>
+    </g>
+  </g>
+</svg>

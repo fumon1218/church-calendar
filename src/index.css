@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg: #EDE8DA;
+    --surface: #FFFFFF;
+    --surface-soft: #F7F3EB;
+    --surface-hover: #EFE9DC;
+    --ink: #222B32;
+    --ink-soft: #5C6773;
+    --ink-faint: #929CA6;
+    --line: #DCD4BD;
+    --line-soft: #EBE5D5;
+    --primary: #344B68;
+    --primary-hover: #263850;
+    --red: #B24638;
+    --blue: #3A69A7;
+  }
+
+  [data-theme="dark"] {
+    --bg: #1A1F26;
+    --surface: #222831;
+    --surface-soft: #2B333E;
+    --surface-hover: #343D4A;
+    --ink: #EDEAE1;
+    --ink-soft: #A6AFB9;
+    --ink-faint: #6E7680;
+    --line: #39424D;
+    --line-soft: #303741;
+    --primary: #7C9ED4;
+    --primary-hover: #96B2DF;
+    --red: #DE6E62;
+    --blue: #6EA0E3;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans KR', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .font-serif {
+    font-family: 'Noto Serif KR', serif;
+  }
+
+  .font-sans {
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+}
+
+/* Print optimization for church bulletin leaflets (주보 인쇄용) */
+@media print {
+  body {
+    background-color: #FFFFFF !important;
+    color: #111111 !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-container {
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  @page {
+    margin: 12mm 15mm;
+    size: auto;
+  }
+}
+
