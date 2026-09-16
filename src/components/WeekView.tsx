@@ -75,7 +75,9 @@ export const WeekView: React.FC<WeekViewProps> = ({
                       {cell.day}
                     </span>
                     {cell.isToday && (
-                      <span className="text-[10px] text-[var(--primary)] font-bold">오늘</span>
+                      <span className="text-[10px] text-[var(--primary)] font-bold whitespace-nowrap flex-shrink-0 px-1 py-0.5 bg-[var(--primary)]/10 rounded leading-none">
+                        오늘
+                      </span>
                     )}
                   </div>
                 </div>

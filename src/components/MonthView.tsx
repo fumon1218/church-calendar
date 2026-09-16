@@ -93,22 +93,24 @@ export const MonthView: React.FC<MonthViewProps> = ({
               }`}
             >
               {/* Day Number Header */}
-              <div className="flex items-center justify-between mb-1">
-                <span
-                  className={`text-xs sm:text-sm leading-none flex items-center justify-center font-serif ${
-                    cell.isToday
-                      ? 'w-6 h-6 rounded-full bg-[var(--primary)] text-white font-bold shadow-xs'
-                      : numColor
-                  }`}
-                >
-                  {cell.day}
-                </span>
-
-                {cell.isToday && (
-                  <span className="text-[10px] text-[var(--primary)] font-semibold hidden sm:inline">
-                    오늘
+              <div className="flex items-center justify-between mb-1 gap-1">
+                <div className="flex items-center gap-1 min-w-0 flex-shrink-0">
+                  <span
+                    className={`text-xs sm:text-sm leading-none flex items-center justify-center font-serif flex-shrink-0 ${
+                      cell.isToday
+                        ? 'w-6 h-6 rounded-full bg-[var(--primary)] text-white font-bold shadow-xs'
+                        : numColor
+                    }`}
+                  >
+                    {cell.day}
                   </span>
-                )}
+
+                  {cell.isToday && (
+                    <span className="text-[10px] text-[var(--primary)] font-semibold whitespace-nowrap flex-shrink-0 px-1 py-0.5 bg-[var(--primary)]/10 rounded leading-none">
+                      오늘
+                    </span>
+                  )}
+                </div>
 
                 {/* Quick Add & Recurring Dropdown on hover */}
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
