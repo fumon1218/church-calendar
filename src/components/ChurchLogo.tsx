@@ -14,7 +14,7 @@ export const ChurchLogo: React.FC<ChurchLogoProps> = ({
   return (
     <div className={`inline-flex items-center gap-2.5 flex-shrink-0 ${className}`}>
       <img
-        src="/logo.svg"
+        src={`${import.meta.env.BASE_URL}logo.svg`}
         alt="동해교회 로고"
         width={typeof size === 'number' ? size : undefined}
         height={typeof size === 'number' ? size : undefined}
