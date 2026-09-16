@@ -192,10 +192,13 @@ export const RecurringScheduleDropdown: React.FC<RecurringScheduleDropdownProps>
 
   // Standard Button variant
   return (
-    <div ref={dropdownRef} className={`relative inline-block text-left ${className}`}>
+    <div ref={dropdownRef} className={`relative inline-block text-left ${isOpen ? 'z-50' : ''} ${className}`}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
         className={`px-3 py-1.5 rounded-xl border transition-all text-xs font-semibold flex items-center gap-1.5 shadow-2xs select-none ${
           variant === 'minimal'
             ? 'bg-transparent hover:bg-[var(--surface-soft)] border-[var(--line)] text-[var(--ink-soft)]'
@@ -214,8 +217,18 @@ export const RecurringScheduleDropdown: React.FC<RecurringScheduleDropdownProps>
   );
 
   function renderDropdownMenu() {
+    // 요일(dow): 0:일, 1:월, 2:화, 3:수, 4:목, 5:금, 6:토
+    // 3(수요일) 이상 오른쪽 열일 경우 오른쪽으로 펼쳐지도록 배치 (right-0)
+    const isRightAlign = dow >= 3;
+
     return (
-      <div className="absolute left-0 sm:left-auto sm:right-0 mt-1.5 w-80 max-w-[calc(100vw-32px)] bg-[var(--surface)] border border-[var(--line)] rounded-2xl shadow-xl z-50 overflow-hidden flex flex-col text-xs animate-in fade-in zoom-in-95 duration-150">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        className={`absolute ${
+          isRightAlign ? 'right-0 left-auto' : 'left-0 right-auto'
+        } mt-1.5 w-72 sm:w-80 max-w-[calc(100vw-32px)] bg-[var(--surface)] border border-[var(--line)] rounded-2xl shadow-2xl z-[999] overflow-hidden flex flex-col text-xs animate-in fade-in zoom-in-95 duration-150`}
+      >
         {/* Menu Header with Search */}
         <div className="p-3 bg-[var(--surface-soft)] border-b border-[var(--line-soft)] space-y-2">
           <div className="flex items-center justify-between">

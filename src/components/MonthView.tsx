@@ -39,9 +39,9 @@ export const MonthView: React.FC<MonthViewProps> = ({
   });
 
   return (
-    <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl shadow-xs overflow-hidden">
+    <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl shadow-xs relative">
       {/* Weekday Header */}
-      <div className="grid grid-cols-7 border-b border-[var(--line-soft)] bg-[var(--surface-soft)]">
+      <div className="grid grid-cols-7 border-b border-[var(--line-soft)] bg-[var(--surface-soft)] rounded-t-2xl overflow-hidden">
         {WEEKDAYS.map((w, idx) => {
           let textColorClass = 'text-[var(--ink-soft)]';
           if (idx === 0) textColorClass = 'text-[var(--red)] font-semibold';
@@ -84,11 +84,11 @@ export const MonthView: React.FC<MonthViewProps> = ({
               key={cell.date + '-' + idx}
               onClick={() => onSelectDate(cell.date)}
               onDoubleClick={() => onOpenNewEventForDate(cell.date)}
-              className={`min-h-[105px] sm:min-h-[120px] p-1.5 sm:p-2 border-r border-b border-[var(--line-soft)] last:border-r-0 transition-all flex flex-col justify-between cursor-pointer relative group ${
+              className={`min-h-[105px] sm:min-h-[120px] p-1.5 sm:p-2 border-r border-b border-[var(--line-soft)] last:border-r-0 transition-all flex flex-col justify-between cursor-pointer relative group hover:z-20 focus-within:z-30 ${
                 cell.inMonth ? 'bg-[var(--surface)]' : 'bg-[var(--surface-soft)]/50'
               } ${
                 isSelected
-                  ? 'ring-2 ring-[var(--primary)] ring-inset bg-[var(--surface-soft)]'
+                  ? 'ring-2 ring-[var(--primary)] ring-inset bg-[var(--surface-soft)] z-10'
                   : 'hover:bg-[var(--surface-hover)]/40'
               }`}
             >
@@ -112,8 +112,8 @@ export const MonthView: React.FC<MonthViewProps> = ({
                   )}
                 </div>
 
-                {/* Quick Add & Recurring Dropdown on hover */}
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Quick Add & Recurring Dropdown on hover / focus */}
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                   {onApplyRecurringTemplate && (
                     <div onClick={(e) => e.stopPropagation()}>
                       <RecurringScheduleDropdown
