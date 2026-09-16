@@ -268,32 +268,32 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* AI Features (Photo & Text) */}
-          <div className="flex items-center gap-1.5">
+          {/* AI Features (Photo & Text) & Praise Table */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full pb-1 sm:pb-0 flex-shrink-0">
             <button
               onClick={onOpenAIPhoto}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-[#3E7C74]/15 hover:bg-[#3E7C74]/25 text-[#25544E] dark:text-[#64A79A] border border-[#3E7C74]/30 transition-colors shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-[#3E7C74]/15 hover:bg-[#3E7C74]/25 text-[#25544E] dark:text-[#64A79A] border border-[#3E7C74]/30 transition-colors shadow-xs whitespace-nowrap"
               title="주보나 일정표 사진을 업로드하여 일정 자동 추출"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
               <span>AI 주보 사진</span>
             </button>
 
             <button
               onClick={onOpenAIText}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-[#7A5C8C]/15 hover:bg-[#7A5C8C]/25 text-[#563D65] dark:text-[#A98CC0] border border-[#7A5C8C]/30 transition-colors shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-[#7A5C8C]/15 hover:bg-[#7A5C8C]/25 text-[#563D65] dark:text-[#A98CC0] border border-[#7A5C8C]/30 transition-colors shadow-xs whitespace-nowrap"
               title="카카오톡 공지문 텍스트로 일정 빠른 추가"
             >
-              <FileText className="w-3.5 h-3.5" />
+              <FileText className="w-3.5 h-3.5 flex-shrink-0" />
               <span>AI 공지 텍스트</span>
             </button>
 
             <button
               onClick={onOpenPraiseTable}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-[#094E85]/15 hover:bg-[#094E85]/25 text-[#094E85] dark:text-[#64B5F6] border border-[#094E85]/30 transition-colors shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-[#094E85]/15 hover:bg-[#094E85]/25 text-[#094E85] dark:text-[#64B5F6] border border-[#094E85]/30 transition-colors shadow-xs whitespace-nowrap"
               title="월별 찬양곡 표 (주보 양식) 확인 및 등록"
             >
-              <Music className="w-3.5 h-3.5" />
+              <Music className="w-3.5 h-3.5 flex-shrink-0" />
               <span>월별 찬양표</span>
             </button>
           </div>
