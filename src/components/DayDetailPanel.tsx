@@ -343,7 +343,28 @@ export const DayDetailPanel: React.FC<DayDetailPanelProps> = ({
                       </div>
                     )}
 
-                    {(ev.time || (ev.memo && !ev.praiseSong)) && (
+                    {(ev.sermonTitle || ev.sermonBible || ev.sermonSummary) && (
+                      <div className="mt-1.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-[11px] space-y-1">
+                        <div className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1 flex-wrap">
+                          <span>📖 설교: {ev.sermonTitle || ev.title}</span>
+                          {ev.sermonSpeaker && (
+                            <span className="font-normal text-[10px]">({ev.sermonSpeaker})</span>
+                          )}
+                        </div>
+                        {ev.sermonBible && (
+                          <div className="text-[10px] italic text-[var(--ink-soft)] font-serif">
+                            본문: {ev.sermonBible}
+                          </div>
+                        )}
+                        {ev.sermonSummary && (
+                          <div className="text-[10px] text-[var(--ink-soft)] whitespace-pre-line leading-relaxed font-medium pt-0.5 border-t border-amber-500/20">
+                            {ev.sermonSummary}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {(ev.time || (ev.memo && !ev.praiseSong && !ev.sermonTitle)) && (
                       <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-[var(--ink-soft)]">
                         {ev.time && (
                           <span className="flex items-center gap-1 font-mono text-[10px]">

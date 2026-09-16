@@ -14,7 +14,8 @@ import {
   Sun, 
   Moon,
   Search,
-  Music
+  Music,
+  BookOpen
 } from 'lucide-react';
 import { ViewMode, ChurchConfig } from '../types';
 import { ChurchLogo } from './ChurchLogo';
@@ -35,6 +36,7 @@ interface HeaderProps {
   onOpenNewEvent: () => void;
   onOpenAIPhoto: () => void;
   onOpenAIText: () => void;
+  onOpenAISermon: () => void;
   onOpenPraiseTable: () => void;
   onOpenPrint: () => void;
   onExportICS: () => void;
@@ -57,6 +59,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNewEvent,
   onOpenAIPhoto,
   onOpenAIText,
+  onOpenAISermon,
   onOpenPraiseTable,
   onOpenPrint,
   onExportICS,
@@ -268,8 +271,17 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* AI Features (Photo & Text) & Praise Table */}
+          {/* AI Features & Praise Table */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full pb-1 sm:pb-0 flex-shrink-0">
+            <button
+              onClick={onOpenAISermon}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-gradient-to-r from-amber-500/20 to-amber-700/20 text-amber-800 dark:text-amber-300 border border-amber-500/40 transition-colors shadow-xs whitespace-nowrap"
+              title="주일 말씀 요약 및 SNS 말씀 카드 생성"
+            >
+              <BookOpen className="w-3.5 h-3.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+              <span>AI 말씀 요약</span>
+            </button>
+
             <button
               onClick={onOpenAIPhoto}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-[#3E7C74]/15 hover:bg-[#3E7C74]/25 text-[#25544E] dark:text-[#64A79A] border border-[#3E7C74]/30 transition-colors shadow-xs whitespace-nowrap"

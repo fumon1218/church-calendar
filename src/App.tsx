@@ -16,6 +16,7 @@ import { EventFormModal } from './components/EventFormModal';
 import { PrintViewModal } from './components/PrintViewModal';
 import { SettingsModal } from './components/SettingsModal';
 import { PraiseTableModal } from './components/PraiseTableModal';
+import { AISermonModal } from './components/AISermonModal';
 
 import { ChurchEvent, EventCategory, ViewMode, ChurchConfig, RecurringTemplate } from './types';
 import { INITIAL_EVENTS } from './data/seedEvents';
@@ -137,6 +138,7 @@ export default function App() {
   // Modals state
   const [isAIPhotoOpen, setIsAIPhotoOpen] = useState(false);
   const [isAITextOpen, setIsAITextOpen] = useState(false);
+  const [isAISermonOpen, setIsAISermonOpen] = useState(false);
   const [isPraiseTableOpen, setIsPraiseTableOpen] = useState(false);
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
@@ -318,6 +320,7 @@ export default function App() {
           onOpenNewEvent={handleOpenNewEvent}
           onOpenAIPhoto={() => setIsAIPhotoOpen(true)}
           onOpenAIText={() => setIsAITextOpen(true)}
+          onOpenAISermon={() => setIsAISermonOpen(true)}
           onOpenPraiseTable={() => setIsPraiseTableOpen(true)}
           onOpenPrint={() => setIsPrintOpen(true)}
           onExportICS={handleExportICS}
@@ -444,6 +447,17 @@ export default function App() {
         baseYear={year}
         baseMonth={month}
         onAddEvents={handleBulkAddEvents}
+      />
+
+      <AISermonModal
+        isOpen={isAISermonOpen}
+        onClose={() => setIsAISermonOpen(false)}
+        baseYear={year}
+        baseMonth={month}
+        onAddEvent={(newEvent) => {
+          handleSaveEvent(newEvent);
+          showToast('주일 설교 요약 및 말씀 카드가 등록되었습니다.');
+        }}
       />
 
       <PraiseTableModal

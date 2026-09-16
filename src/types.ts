@@ -12,6 +12,10 @@ export interface ChurchEvent {
   praiseSong?: string; // 찬양곡 (예: "은혜찬송가 52장", "찬송가 404장", "악보곡")
   praiseSubtitle?: string; // 부제 (예: "망망한 인생의 거친 바다에", "주를 보라")
   startHymn?: string; // 시작찬송 (예: "은찬 69, 91", "찬 408, 411")
+  sermonTitle?: string; // 설교 제목 (예: "은혜로 살아가는 삶")
+  sermonSpeaker?: string; // 설교자 (예: "정현 목사")
+  sermonBible?: string; // 본문 말씀 (예: "로마서 8장 1~11절")
+  sermonSummary?: string; // 핵심 요약 문구
 }
 
 export interface CategoryMeta {
