@@ -328,32 +328,47 @@ const ImportPanel: React.FC<ImportPanelProps> = ({ customVersions, onChanged }) 
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [msgKind, setMsgKind] = useState<'error' | 'info' | 'success'>('info');
+  const [fileInfo, setFileInfo] = useState<string | null>(null);
 
   const handleImport = async () => {
     const file = fileRef.current?.files?.[0];
     if (!file) {
-      setMsg('먼저 JSON 파일을 선택해주세요.');
+      setMsgKind('error');
+      setMsg('⚠️ 먼저 위 "파일 선택" 버튼을 눌러서 JSON 파일을 골라주세요.');
       return;
     }
     const codeTrim = code.trim().toLowerCase();
     if (!codeTrim) {
-      setMsg('짧은 코드(영문/숫자, 예: esv)를 입력해주세요.');
+      setMsgKind('error');
+      setMsg('⚠️ 짧은 코드(영문/숫자, 예: esv)를 입력해주세요.');
       return;
     }
     setBusy(true);
-    setMsg(null);
+    setMsgKind('info');
+    setMsg(
+      file.size > 5 * 1024 * 1024
+        ? '처리를 시작합니다. 파일이 커서 몇 초간 화면이 멈춘 것처럼 보일 수 있어요 — 잠시만 기다려주세요...'
+        : '처리 중입니다...'
+    );
     setProgress({ done: 0, total: 66 });
+    // 브라우저가 위 "처리 중" 화면을 먼저 그릴 수 있게 한 박자 쉬어줍니다.
+    await new Promise((r) => setTimeout(r, 50));
     try {
       const count = await importBibleFile(file, codeTrim, label.trim() || codeTrim.toUpperCase(), type, (done, total) =>
         setProgress({ done, total })
       );
-      setMsg(`"${label || codeTrim}" ${count}권을 추가했습니다. 이제 목록에서 바로 선택할 수 있어요.`);
+      setMsgKind('success');
+      setMsg(`✅ "${label || codeTrim}" ${count}권을 추가했습니다. 이제 위 목록에서 바로 선택할 수 있어요.`);
       setCode('');
       setLabel('');
+      setFileInfo(null);
       if (fileRef.current) fileRef.current.value = '';
       onChanged();
     } catch (e: any) {
-      setMsg(`추가에 실패했습니다: ${e?.message || '알 수 없는 오류'}`);
+      console.error('성경 파일 가져오기 실패:', e);
+      setMsgKind('error');
+      setMsg(`❌ 추가에 실패했습니다: ${e?.message || '알 수 없는 오류'}`);
     } finally {
       setBusy(false);
       setProgress(null);
@@ -390,22 +405,49 @@ const ImportPanel: React.FC<ImportPanelProps> = ({ customVersions, onChanged }) 
             <option value="translation">번역본</option>
             <option value="commentary">주석</option>
           </select>
-          <input ref={fileRef} type="file" accept=".json,application/json" className="text-[11px] max-w-[160px]" />
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".json,application/json"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              setFileInfo(f ? `${f.name} (${(f.size / 1024 / 1024).toFixed(1)}MB)` : null);
+              setMsg(null);
+            }}
+            className="text-[11px] max-w-[180px]"
+          />
           <button
+            type="button"
             onClick={handleImport}
             disabled={busy}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--ink)] text-[var(--bg)] hover:opacity-90 disabled:opacity-50"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--ink)] text-[var(--bg)] hover:opacity-90 disabled:opacity-50 flex-shrink-0"
           >
             {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-            <span>가져오기</span>
+            <span>{busy ? '처리 중...' : '가져오기'}</span>
           </button>
         </div>
+
+        {fileInfo && !msg && (
+          <p className="text-[10px] text-[var(--ink-soft)] mt-1">📄 선택된 파일: {fileInfo}</p>
+        )}
         {progress && (
           <p className="text-[10px] text-[var(--ink-faint)] mt-1">
-            처리 중... {progress.done}/{progress.total}권 (파일이 크면 몇 초 걸릴 수 있어요)
+            책 나누는 중... {progress.done}/{progress.total}권
           </p>
         )}
-        {msg && <p className="text-[10px] text-[var(--primary)] mt-1">{msg}</p>}
+        {msg && (
+          <p
+            className={`text-[11px] font-semibold mt-1.5 p-2 rounded-lg border ${
+              msgKind === 'error'
+                ? 'text-red-700 dark:text-red-400 bg-red-500/10 border-red-500/30'
+                : msgKind === 'success'
+                ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                : 'text-[var(--ink)] bg-[var(--surface)] border-[var(--line)]'
+            }`}
+          >
+            {msg}
+          </p>
+        )}
       </div>
 
       {customVersions.length > 0 && (
