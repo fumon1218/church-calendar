@@ -65,15 +65,19 @@ export const BibleSearchModal: React.FC<BibleSearchModalProps> = ({ isOpen, onCl
     setError(null);
     setSearched(true);
     try {
+      // match_whole=true → 정확한 단어/구절 일치 검색 (2026-07-16 API 개편 이후 기본값이 "의미 기반 검색"으로
+      // 바뀌었는데, 짧은 한글 검색어에서 결과가 불안정할 수 있어 명시적으로 끕니다)
       const url = `https://bolls.life/v2/find/${translation}?search=${encodeURIComponent(
         q
-      )}&match_case=false&match_whole=false&limit=30&page=1`;
+      )}&match_case=false&match_whole=true&limit=30&page=1`;
       const res = await fetch(url);
-      if (!res.ok) throw new Error('요청 실패');
+      if (!res.ok) throw new Error(`요청 실패 (상태 코드 ${res.status})`);
       const data = await res.json();
       setResults(data.results || []);
-    } catch {
-      setError('검색 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } catch (e: any) {
+      setError(
+        `검색 중 문제가 발생했습니다: ${e?.message || '알 수 없는 오류'} (인터넷 연결 또는 방화벽/광고 차단 확장 프로그램을 확인해주세요)`
+      );
       setResults([]);
     } finally {
       setLoading(false);
