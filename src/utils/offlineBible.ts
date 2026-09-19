@@ -116,11 +116,24 @@ export async function importBibleFile(
   onProgress?: (done: number, total: number) => void
 ): Promise<number> {
   const text = await file.text();
-  const parsed = JSON.parse(text);
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(text);
+  } catch (e) {
+    throw new Error('JSON 형식이 올바르지 않습니다. 파일이 손상되었거나 JSON 파일이 아닐 수 있습니다.');
+  }
+
   const books: Record<string, BookData> = parsed.book;
-  if (!books) throw new Error('올바른 성경 JSON 형식이 아닙니다. ("book" 키를 찾을 수 없습니다)');
+  if (!books || typeof books !== 'object') {
+    throw new Error('올바른 성경 JSON 형식이 아닙니다. ("book" 키를 찾을 수 없습니다)');
+  }
 
   const ids = Object.keys(books);
+  if (ids.length === 0) {
+    throw new Error('파일 안에 책 데이터가 없습니다.');
+  }
+
   let done = 0;
   for (const id of ids) {
     await idbSet(`${code}_${id}`, books[id]);
