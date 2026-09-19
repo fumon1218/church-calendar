@@ -4,6 +4,8 @@ import { CATEGORY_MAP } from '../data/categories';
 import { ChurchEvent, RecurringTemplate } from '../types';
 import { RecurringScheduleDropdown } from './RecurringScheduleDropdown';
 import { Zap } from 'lucide-react';
+import { HolidayMap } from '../utils/holidays';
+import { WeatherMap, weatherEmoji } from '../utils/weather';
 
 interface MonthViewProps {
   year: number;
@@ -13,6 +15,8 @@ interface MonthViewProps {
   events: ChurchEvent[];
   onOpenNewEventForDate: (date: string) => void;
   onApplyRecurringTemplate?: (date: string, tmpl: RecurringTemplate) => void;
+  holidays?: HolidayMap;
+  weather?: WeatherMap;
 }
 
 export const MonthView: React.FC<MonthViewProps> = ({
@@ -23,6 +27,8 @@ export const MonthView: React.FC<MonthViewProps> = ({
   events,
   onOpenNewEventForDate,
   onApplyRecurringTemplate,
+  holidays = {},
+  weather = {},
 }) => {
   const cells = getMonthMatrix(year, month);
 
@@ -110,6 +116,16 @@ export const MonthView: React.FC<MonthViewProps> = ({
                       오늘
                     </span>
                   )}
+
+                  {weather[cell.date] && (
+                    <span
+                      className="text-[10px] flex-shrink-0 flex items-center gap-0.5"
+                      title={`최고 ${Math.round(weather[cell.date].tMax)}° / 최저 ${Math.round(weather[cell.date].tMin)}°`}
+                    >
+                      <span>{weatherEmoji(weather[cell.date].code)}</span>
+                      <span className="text-[var(--ink-faint)]">{Math.round(weather[cell.date].tMax)}°</span>
+                    </span>
+                  )}
                 </div>
 
                 {/* Quick Add & Recurring Dropdown on hover / focus */}
@@ -143,6 +159,12 @@ export const MonthView: React.FC<MonthViewProps> = ({
                   </button>
                 </div>
               </div>
+
+              {holidays[cell.date] && (
+                <div className="text-[9px] sm:text-[10px] text-[var(--red)] font-semibold truncate mb-0.5" title={holidays[cell.date]}>
+                  {holidays[cell.date]}
+                </div>
+              )}
 
               {/* Event Chips or Empty Placeholder */}
               <div className="flex-1 flex flex-col gap-1 overflow-hidden justify-start">

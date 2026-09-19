@@ -8,6 +8,8 @@ export interface ChurchEvent {
   time?: string; // HH:mm or e.g. "10:00"
   memo?: string;
   location?: string;
+  lat?: number; // 카카오 지도 검색으로 채워지는 위도 (선택)
+  lng?: number; // 카카오 지도 검색으로 채워지는 경도 (선택)
   isImportant?: boolean;
   praiseSong?: string; // 찬양곡 (예: "은혜찬송가 52장", "찬송가 404장", "악보곡")
   praiseSubtitle?: string; // 부제 (예: "망망한 인생의 거친 바다에", "주를 보라")
@@ -34,6 +36,9 @@ export interface ChurchConfig {
   churchName: string;
   subTitle: string;
   motto: string;
+  locationLabel?: string; // 교회 위치 표시 이름 (날씨 예보 기준점)
+  lat?: number;
+  lng?: number;
 }
 
 export interface CalendarDayCell {

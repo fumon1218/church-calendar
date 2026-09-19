@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { ChurchConfig, ChurchEvent, RecurringTemplate, EventCategory } from '../types';
-import { X, Download, Upload, RotateCcw, Check, Save, Zap, Plus, Trash2 } from 'lucide-react';
+import { X, Download, Upload, RotateCcw, Check, Save, Zap, Plus, Trash2, MapPin } from 'lucide-react';
 import { downloadFile } from '../utils/calendar';
 import { ChurchLogo } from './ChurchLogo';
 import { CATEGORY_MAP, CATEGORIES } from '../data/categories';
 import { getStoredRecurringTemplates, saveStoredRecurringTemplates, DEFAULT_RECURRING_TEMPLATES } from '../data/recurringTemplates';
+import { AddressSearchInput } from './AddressSearchInput';
+import { isKakaoConfigured } from '../utils/kakao';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -29,6 +31,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [churchName, setChurchName] = useState(churchConfig.churchName);
   const [subTitle, setSubTitle] = useState(churchConfig.subTitle);
   const [motto, setMotto] = useState(churchConfig.motto);
+  const [locationLabel, setLocationLabel] = useState(churchConfig.locationLabel || '');
+  const [lat, setLat] = useState<number | undefined>(churchConfig.lat);
+  const [lng, setLng] = useState<number | undefined>(churchConfig.lng);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
   // Recurring templates management state
@@ -86,6 +91,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       churchName: churchName.trim() || '교회',
       subTitle: subTitle.trim() || '부서 일정 달력',
       motto: motto.trim() || '말씀과 기도로 거룩하여지는 공동체',
+      locationLabel: locationLabel.trim() || undefined,
+      lat,
+      lng,
     });
     setStatusMsg('교회 정보가 성공적으로 저장되었습니다.');
     setTimeout(() => setStatusMsg(null), 2500);
@@ -251,6 +259,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   placeholder="예: 믿음의 주 온전케 하시는 예수를 바라보자"
                   className="w-full px-3 py-2 bg-[var(--surface-soft)] border border-[var(--line)] rounded-xl text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
                 />
+              </div>
+
+              <div className="pt-2 border-t border-[var(--line-soft)]">
+                <label className="block text-[11px] font-semibold text-[var(--ink-soft)] mb-1 flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-[var(--ink-faint)]" />
+                  <span>교회 위치 (날씨 예보 기준점)</span>
+                </label>
+                <p className="text-[10px] text-[var(--ink-faint)] mb-1.5">
+                  설정해두면 달력 각 날짜에 그 지역 날씨 예보가 함께 표시됩니다. (미설정 시 서울 기준)
+                </p>
+                {isKakaoConfigured() ? (
+                  <>
+                    <AddressSearchInput
+                      placeholder="교회 주소/이름 검색"
+                      onSelect={(r) => {
+                        setLocationLabel(r.address);
+                        setLat(r.lat);
+                        setLng(r.lng);
+                      }}
+                    />
+                    {locationLabel && (
+                      <p className="text-[11px] text-[var(--ink)] mt-1.5 px-1">
+                        현재 설정: <b>{locationLabel}</b>
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-[10px] text-[var(--ink-faint)] italic p-2 bg-[var(--surface-soft)] rounded-lg border border-[var(--line-soft)]">
+                    카카오맵 키(VITE_KAKAO_APP_KEY)가 설정되지 않아 주소 검색을 사용할 수 없습니다.
+                  </p>
+                )}
               </div>
 
               <div className="flex justify-end pt-2">

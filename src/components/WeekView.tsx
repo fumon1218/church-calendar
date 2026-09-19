@@ -3,12 +3,16 @@ import { getWeekDays, WEEKDAYS, formatShortKoreanDate } from '../utils/calendar'
 import { CATEGORY_MAP } from '../data/categories';
 import { ChurchEvent } from '../types';
 import { Clock, MapPin, Plus } from 'lucide-react';
+import { HolidayMap } from '../utils/holidays';
+import { WeatherMap, weatherEmoji } from '../utils/weather';
 
 interface WeekViewProps {
   selectedDate: string;
   onSelectDate: (date: string) => void;
   events: ChurchEvent[];
   onOpenNewEventForDate: (date: string) => void;
+  holidays?: HolidayMap;
+  weather?: WeatherMap;
 }
 
 export const WeekView: React.FC<WeekViewProps> = ({
@@ -16,6 +20,8 @@ export const WeekView: React.FC<WeekViewProps> = ({
   onSelectDate,
   events,
   onOpenNewEventForDate,
+  holidays = {},
+  weather = {},
 }) => {
   const weekDays = getWeekDays(selectedDate);
 
@@ -79,7 +85,21 @@ export const WeekView: React.FC<WeekViewProps> = ({
                         오늘
                       </span>
                     )}
+                    {weather[cell.date] && (
+                      <span
+                        className="text-[10px] flex items-center gap-0.5 flex-shrink-0"
+                        title={`최고 ${Math.round(weather[cell.date].tMax)}° / 최저 ${Math.round(weather[cell.date].tMin)}°`}
+                      >
+                        <span>{weatherEmoji(weather[cell.date].code)}</span>
+                        <span className="text-[var(--ink-faint)]">{Math.round(weather[cell.date].tMax)}°</span>
+                      </span>
+                    )}
                   </div>
+                  {holidays[cell.date] && (
+                    <div className="text-[10px] text-[var(--red)] font-semibold mt-0.5">
+                      {holidays[cell.date]}
+                    </div>
+                  )}
                 </div>
 
                 <button

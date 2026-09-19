@@ -3,6 +3,8 @@ import { ChurchEvent, EventCategory } from '../types';
 import { CATEGORIES } from '../data/categories';
 import { getStoredRecurringTemplates } from '../data/recurringTemplates';
 import { X, Calendar, Clock, MapPin, Tag, Zap, Trash2 } from 'lucide-react';
+import { AddressSearchInput } from './AddressSearchInput';
+import { KakaoMapPreview } from './KakaoMapPreview';
 
 interface EventFormModalProps {
   isOpen: boolean;
@@ -27,6 +29,8 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
   const [time, setTime] = useState('');
   const [memo, setMemo] = useState('');
   const [location, setLocation] = useState('');
+  const [lat, setLat] = useState<number | undefined>(undefined);
+  const [lng, setLng] = useState<number | undefined>(undefined);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   useEffect(() => {
@@ -38,6 +42,8 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
       setTime(initialEvent.time || '');
       setMemo(initialEvent.memo || '');
       setLocation(initialEvent.location || '');
+      setLat(initialEvent.lat);
+      setLng(initialEvent.lng);
     } else {
       setDate(initialDate || new Date().toISOString().slice(0, 10));
       setCategory('worship');
@@ -45,6 +51,8 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
       setTime('');
       setMemo('');
       setLocation('');
+      setLat(undefined);
+      setLng(undefined);
     }
   }, [initialEvent, initialDate, isOpen]);
 
@@ -62,6 +70,8 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
       time: time || undefined,
       memo: memo.trim() || undefined,
       location: location.trim() || undefined,
+      lat,
+      lng,
     });
 
     onClose();
@@ -204,9 +214,25 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
               type="text"
               placeholder="예: 본당, 소강당, 교육관 2층, 야외"
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-3 py-2 bg-[var(--surface-soft)] border border-[var(--line)] rounded-xl text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
+              onChange={(e) => {
+                setLocation(e.target.value);
+                setLat(undefined);
+                setLng(undefined);
+              }}
+              className="w-full px-3 py-2 bg-[var(--surface-soft)] border border-[var(--line)] rounded-xl text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)] mb-1.5"
             />
+            <AddressSearchInput
+              onSelect={(r) => {
+                setLocation(r.address);
+                setLat(r.lat);
+                setLng(r.lng);
+              }}
+            />
+            {lat != null && lng != null && (
+              <div className="mt-1.5">
+                <KakaoMapPreview lat={lat} lng={lng} height={120} />
+              </div>
+            )}
           </div>
 
           {/* Memo */}

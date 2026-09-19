@@ -22,6 +22,9 @@ import { BibleSearchModal } from './components/BibleSearchModal';
 import { ChurchEvent, EventCategory, ViewMode, ChurchConfig, RecurringTemplate } from './types';
 import { INITIAL_EVENTS } from './data/seedEvents';
 import { generateICS, downloadFile, getTodayStr } from './utils/calendar';
+import { fetchHolidaysAround, HolidayMap } from './utils/holidays';
+import { fetchWeather, WeatherMap } from './utils/weather';
+import { TodaysVerseBanner } from './components/TodaysVerseBanner';
 import { CheckCircle2, Sparkles, CalendarDays } from 'lucide-react';
 
 const STORAGE_EVENTS_KEY = 'church-calendar-events-v1';
@@ -135,6 +138,36 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedCategory, setSelectedCategory] = useState<EventCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // 공휴일 (연도가 바뀔 때마다 자동으로 다시 불러옵니다)
+  const [holidays, setHolidays] = useState<HolidayMap>({});
+  useEffect(() => {
+    let cancelled = false;
+    fetchHolidaysAround(year).then((map) => {
+      if (!cancelled) setHolidays(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [year]);
+
+  // 날씨 (교회 위치가 설정에 저장돼 있으면 그 위치, 없으면 서울 기준)
+  const [weather, setWeather] = useState<WeatherMap>({});
+  useEffect(() => {
+    const lat = churchConfig.lat ?? 37.5665;
+    const lng = churchConfig.lng ?? 126.978;
+    let cancelled = false;
+    fetchWeather(lat, lng)
+      .then((map) => {
+        if (!cancelled) setWeather(map);
+      })
+      .catch(() => {
+        if (!cancelled) setWeather({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [churchConfig.lat, churchConfig.lng]);
 
   // Modals state
   const [isAIPhotoOpen, setIsAIPhotoOpen] = useState(false);
@@ -337,6 +370,8 @@ export default function App() {
           events={events}
         />
 
+        <TodaysVerseBanner />
+
         {/* Content Views */}
         <main className="transition-all">
           {viewMode === 'month' && (
@@ -358,6 +393,8 @@ export default function App() {
                   events={filteredEvents}
                   onOpenNewEventForDate={handleOpenNewEventForDate}
                   onApplyRecurringTemplate={handleApplyRecurringTemplate}
+                  holidays={holidays}
+                  weather={weather}
                 />
               </div>
 
@@ -384,6 +421,8 @@ export default function App() {
                 onSelectDate={setSelectedDate}
                 events={filteredEvents}
                 onOpenNewEventForDate={handleOpenNewEventForDate}
+                holidays={holidays}
+                weather={weather}
               />
               {selectedDate && (
                 <div className="max-w-2xl mx-auto mt-4">
@@ -411,6 +450,7 @@ export default function App() {
                 onEditEvent={handleStartEdit}
                 onDeleteEvent={handleDeleteEvent}
                 onOpenNewEventForDate={handleOpenNewEventForDate}
+                holidays={holidays}
               />
             </div>
           )}

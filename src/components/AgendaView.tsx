@@ -3,6 +3,7 @@ import { ChurchEvent } from '../types';
 import { CATEGORY_MAP } from '../data/categories';
 import { formatKoreanDate, getDayOfWeek } from '../utils/calendar';
 import { Clock, MapPin, Edit2, Trash2, Plus, Calendar } from 'lucide-react';
+import { HolidayMap } from '../utils/holidays';
 
 interface AgendaViewProps {
   events: ChurchEvent[];
@@ -10,6 +11,7 @@ interface AgendaViewProps {
   onEditEvent: (event: ChurchEvent) => void;
   onDeleteEvent: (id: string) => void;
   onOpenNewEventForDate: (date: string) => void;
+  holidays?: HolidayMap;
 }
 
 export const AgendaView: React.FC<AgendaViewProps> = ({
@@ -18,6 +20,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   onEditEvent,
   onDeleteEvent,
   onOpenNewEventForDate,
+  holidays = {},
 }) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
@@ -71,6 +74,11 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                 <span className={`text-sm sm:text-base font-serif ${dateColor}`}>
                   {formatKoreanDate(dateStr)}
                 </span>
+                {holidays[dateStr] && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--red)]/10 text-[var(--red)] font-semibold">
+                    {holidays[dateStr]}
+                  </span>
+                )}
                 <span className="text-xs text-[var(--ink-soft)] px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--line-soft)]">
                   {dayEvents.length}개 일정
                 </span>

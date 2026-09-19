@@ -5,6 +5,8 @@ import { formatKoreanDate, getDayOfWeek } from '../utils/calendar';
 import { Plus, Edit2, Trash2, Clock, MapPin, Calendar, X, Zap } from 'lucide-react';
 import { RecurringScheduleDropdown } from './RecurringScheduleDropdown';
 import { getStoredRecurringTemplates } from '../data/recurringTemplates';
+import { BibleRefText } from './BibleRefText';
+import { KakaoMapPreview } from './KakaoMapPreview';
 
 interface DayDetailPanelProps {
   selectedDate: string | null;
@@ -353,14 +355,20 @@ export const DayDetailPanel: React.FC<DayDetailPanelProps> = ({
                         </div>
                         {ev.sermonBible && (
                           <div className="text-[10px] italic text-[var(--ink-soft)] font-serif">
-                            본문: {ev.sermonBible}
+                            본문: <BibleRefText text={ev.sermonBible} />
                           </div>
                         )}
                         {ev.sermonSummary && (
                           <div className="text-[10px] text-[var(--ink-soft)] whitespace-pre-line leading-relaxed font-medium pt-0.5 border-t border-amber-500/20">
-                            {ev.sermonSummary}
+                            <BibleRefText text={ev.sermonSummary} />
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {ev.lat != null && ev.lng != null && (
+                      <div className="mt-1.5">
+                        <KakaoMapPreview lat={ev.lat} lng={ev.lng} height={110} />
                       </div>
                     )}
 
