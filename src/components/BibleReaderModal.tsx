@@ -414,8 +414,16 @@ const ImportPanel: React.FC<ImportPanelProps> = ({ customVersions, onChanged }) 
               setFileInfo(f ? `${f.name} (${(f.size / 1024 / 1024).toFixed(1)}MB)` : null);
               setMsg(null);
             }}
-            className="text-[11px] max-w-[180px]"
+            className="hidden"
+            id="bibleFileInput"
           />
+          <label
+            htmlFor="bibleFileInput"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border-2 border-dashed border-[var(--primary)]/50 text-[var(--primary)] bg-[var(--primary)]/8 hover:bg-[var(--primary)]/15 hover:border-[var(--primary)] cursor-pointer transition-colors select-none"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span>📁 파일 선택하기</span>
+          </label>
           <button
             type="button"
             onClick={handleImport}
@@ -428,7 +436,9 @@ const ImportPanel: React.FC<ImportPanelProps> = ({ customVersions, onChanged }) 
         </div>
 
         {fileInfo && !msg && (
-          <p className="text-[10px] text-[var(--ink-soft)] mt-1">📄 선택된 파일: {fileInfo}</p>
+          <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 mt-1.5 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+            ✅ 선택됨: {fileInfo}
+          </p>
         )}
         {progress && (
           <p className="text-[10px] text-[var(--ink-faint)] mt-1">
