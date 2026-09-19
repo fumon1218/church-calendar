@@ -18,6 +18,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { PraiseTableModal } from './components/PraiseTableModal';
 import { AISermonModal } from './components/AISermonModal';
 import { BibleSearchModal } from './components/BibleSearchModal';
+import { BibleReaderModal } from './components/BibleReaderModal';
 
 import { ChurchEvent, EventCategory, ViewMode, ChurchConfig, RecurringTemplate } from './types';
 import { INITIAL_EVENTS } from './data/seedEvents';
@@ -178,6 +179,7 @@ export default function App() {
   const [isPrintOpen, setIsPrintOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isBibleSearchOpen, setIsBibleSearchOpen] = useState(false);
+  const [isBibleReaderOpen, setIsBibleReaderOpen] = useState(false);
 
   // Event modal targets
   const [editingEvent, setEditingEvent] = useState<ChurchEvent | null>(null);
@@ -358,6 +360,7 @@ export default function App() {
           onOpenAISermon={() => setIsAISermonOpen(true)}
           onOpenPraiseTable={() => setIsPraiseTableOpen(true)}
           onOpenBibleSearch={() => setIsBibleSearchOpen(true)}
+          onOpenBibleReader={() => setIsBibleReaderOpen(true)}
           onOpenPrint={() => setIsPrintOpen(true)}
           onExportICS={handleExportICS}
           onOpenSettings={() => setIsSettingsOpen(true)}
@@ -551,6 +554,11 @@ export default function App() {
       <BibleSearchModal
         isOpen={isBibleSearchOpen}
         onClose={() => setIsBibleSearchOpen(false)}
+      />
+
+      <BibleReaderModal
+        isOpen={isBibleReaderOpen}
+        onClose={() => setIsBibleReaderOpen(false)}
       />
     </div>
   );

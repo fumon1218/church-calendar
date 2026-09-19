@@ -15,7 +15,7 @@ export interface BibleRefMatch {
   verseEnd?: number;
 }
 
-const BOOKS: { id: number; full: string; abbr: string[] }[] = [
+export const BOOKS: { id: number; full: string; abbr: string[] }[] = [
   { id: 1, full: '창세기', abbr: ['창'] },
   { id: 2, full: '출애굽기', abbr: ['출'] },
   { id: 3, full: '레위기', abbr: ['레'] },

@@ -40,6 +40,7 @@ interface HeaderProps {
   onOpenAISermon: () => void;
   onOpenPraiseTable: () => void;
   onOpenBibleSearch: () => void;
+  onOpenBibleReader: () => void;
   onOpenPrint: () => void;
   onExportICS: () => void;
   onOpenSettings: () => void;
@@ -64,6 +65,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAISermon,
   onOpenPraiseTable,
   onOpenBibleSearch,
+  onOpenBibleReader,
   onOpenPrint,
   onExportICS,
   onOpenSettings,
@@ -319,6 +321,15 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <BookMarked className="w-3.5 h-3.5 flex-shrink-0" />
               <span>성경검색</span>
+            </button>
+
+            <button
+              onClick={onOpenBibleReader}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 transition-colors shadow-xs whitespace-nowrap"
+              title="성경 읽기 (오프라인, 개역한글/NIV/주석)"
+            >
+              <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>성경읽기</span>
             </button>
           </div>
 
