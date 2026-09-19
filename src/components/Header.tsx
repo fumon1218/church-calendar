@@ -15,7 +15,8 @@ import {
   Moon,
   Search,
   Music,
-  BookOpen
+  BookOpen,
+  BookMarked
 } from 'lucide-react';
 import { ViewMode, ChurchConfig } from '../types';
 import { ChurchLogo } from './ChurchLogo';
@@ -38,6 +39,7 @@ interface HeaderProps {
   onOpenAIText: () => void;
   onOpenAISermon: () => void;
   onOpenPraiseTable: () => void;
+  onOpenBibleSearch: () => void;
   onOpenPrint: () => void;
   onExportICS: () => void;
   onOpenSettings: () => void;
@@ -61,6 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAIText,
   onOpenAISermon,
   onOpenPraiseTable,
+  onOpenBibleSearch,
   onOpenPrint,
   onExportICS,
   onOpenSettings,
@@ -307,6 +310,15 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Music className="w-3.5 h-3.5 flex-shrink-0" />
               <span>월별 찬양표</span>
+            </button>
+
+            <button
+              onClick={onOpenBibleSearch}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-[var(--primary)]/15 hover:bg-[var(--primary)]/25 text-[var(--primary)] border border-[var(--primary)]/30 transition-colors shadow-xs whitespace-nowrap"
+              title="성경 구절 검색 (개역한글/새번역)"
+            >
+              <BookMarked className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>성경검색</span>
             </button>
           </div>
 
