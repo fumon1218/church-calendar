@@ -17,6 +17,7 @@ import { PrintViewModal } from './components/PrintViewModal';
 import { SettingsModal } from './components/SettingsModal';
 import { PraiseTableModal } from './components/PraiseTableModal';
 import { AISermonModal } from './components/AISermonModal';
+import { BibleSearchModal } from './components/BibleSearchModal';
 
 import { ChurchEvent, EventCategory, ViewMode, ChurchConfig, RecurringTemplate } from './types';
 import { INITIAL_EVENTS } from './data/seedEvents';
@@ -143,6 +144,7 @@ export default function App() {
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isBibleSearchOpen, setIsBibleSearchOpen] = useState(false);
 
   // Event modal targets
   const [editingEvent, setEditingEvent] = useState<ChurchEvent | null>(null);
@@ -322,6 +324,7 @@ export default function App() {
           onOpenAIText={() => setIsAITextOpen(true)}
           onOpenAISermon={() => setIsAISermonOpen(true)}
           onOpenPraiseTable={() => setIsPraiseTableOpen(true)}
+          onOpenBibleSearch={() => setIsBibleSearchOpen(true)}
           onOpenPrint={() => setIsPrintOpen(true)}
           onExportICS={handleExportICS}
           onOpenSettings={() => setIsSettingsOpen(true)}
@@ -503,6 +506,11 @@ export default function App() {
           showToast(`${imported.length}개의 일정이 복원되었습니다.`);
         }}
         onResetSeed={handleResetSeed}
+      />
+
+      <BibleSearchModal
+        isOpen={isBibleSearchOpen}
+        onClose={() => setIsBibleSearchOpen(false)}
       />
     </div>
   );
