@@ -29,7 +29,24 @@ interface BibleReaderModalProps {
 
 const BUILT_IN_TRANSLATIONS = [
   { code: 'krv', label: '개역한글' },
+  { code: 'nkrv', label: '개역개정' },
+  { code: 'rnksv', label: '새번역' },
+  { code: 'ctb', label: '공동번역' },
+  { code: 'eb', label: '쉬운성경' },
+  { code: 'kb', label: '한국어성경(kb)' },
+  { code: 'klb', label: '한국어성경(klb)' },
+  { code: 'ktb', label: '바른성경' },
+  { code: 'tkv', label: '현대어성경' },
+  { code: 'kkjv', label: '한글킹제임스' },
+  { code: 'kjvk', label: '한글킹제임스(주석포함)' },
+  { code: 'krvch', label: '개역한글(한자병기)' },
   { code: 'niv', label: 'NIV (영어)' },
+  { code: 'kjv', label: 'KJV (영어)' },
+  { code: 'nkjv', label: 'NKJV (영어)' },
+  { code: 'esv', label: 'ESV (영어)' },
+  { code: 'nlt', label: 'NLT (영어)' },
+  { code: 'jou', label: '일본어성경(jou)' },
+  { code: 'skv', label: '일본어성경(신개역)' },
 ];
 const BUILT_IN_COMMENTARIES = [{ code: 'chokmah', label: 'Chokmah 주석' }];
 
