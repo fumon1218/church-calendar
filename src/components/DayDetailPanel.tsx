@@ -7,6 +7,7 @@ import { RecurringScheduleDropdown } from './RecurringScheduleDropdown';
 import { getStoredRecurringTemplates } from '../data/recurringTemplates';
 import { BibleRefText } from './BibleRefText';
 import { KakaoMapPreview } from './KakaoMapPreview';
+import { AddressSearchInput } from './AddressSearchInput';
 
 interface DayDetailPanelProps {
   selectedDate: string | null;
@@ -34,6 +35,9 @@ export const DayDetailPanel: React.FC<DayDetailPanelProps> = ({
   const [category, setCategory] = useState<EventCategory>('worship');
   const [time, setTime] = useState('');
   const [memo, setMemo] = useState('');
+  const [location, setLocation] = useState('');
+  const [lat, setLat] = useState<number | undefined>(undefined);
+  const [lng, setLng] = useState<number | undefined>(undefined);
 
   const dayEvents = selectedDate
     ? events
@@ -48,6 +52,9 @@ export const DayDetailPanel: React.FC<DayDetailPanelProps> = ({
     setCategory('worship');
     setTime('');
     setMemo('');
+    setLocation('');
+    setLat(undefined);
+    setLng(undefined);
   };
 
   const handleStartEdit = (ev: ChurchEvent) => {
@@ -57,6 +64,9 @@ export const DayDetailPanel: React.FC<DayDetailPanelProps> = ({
     setCategory(ev.category);
     setTime(ev.time || '');
     setMemo(ev.memo || '');
+    setLocation(ev.location || '');
+    setLat(ev.lat);
+    setLng(ev.lng);
   };
 
   const handleCancel = () => {
@@ -75,6 +85,9 @@ export const DayDetailPanel: React.FC<DayDetailPanelProps> = ({
       title: title.trim(),
       time: time || undefined,
       memo: memo.trim() || undefined,
+      location: location.trim() || undefined,
+      lat,
+      lng,
     });
 
     handleCancel();
@@ -495,15 +508,44 @@ export const DayDetailPanel: React.FC<DayDetailPanelProps> = ({
 
             <div>
               <label className="block text-[11px] font-semibold text-[var(--ink-soft)] mb-1">
-                메모 / 장소 / 담당자
+                메모 / 담당자
               </label>
               <textarea
                 rows={2}
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
-                placeholder="장소, 준비물, 설교자 등"
+                placeholder="준비물, 설교자 등"
                 className="w-full px-2.5 py-1.5 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-xs text-[var(--ink)] focus:outline-none resize-none"
               />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-[var(--ink-soft)] mb-1">
+                장소 (선택)
+              </label>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  setLat(undefined);
+                  setLng(undefined);
+                }}
+                placeholder="예: 본당, 소강당, 교육관 2층"
+                className="w-full px-2.5 py-1.5 mb-1.5 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-xs text-[var(--ink)] focus:outline-none"
+              />
+              <AddressSearchInput
+                onSelect={(r) => {
+                  setLocation(r.address);
+                  setLat(r.lat);
+                  setLng(r.lng);
+                }}
+              />
+              {lat != null && lng != null && (
+                <div className="mt-1.5">
+                  <KakaoMapPreview lat={lat} lng={lng} height={100} />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-1">
