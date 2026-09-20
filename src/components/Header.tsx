@@ -16,7 +16,8 @@ import {
   Search,
   Music,
   BookOpen,
-  BookMarked
+  BookMarked,
+  Cloud
 } from 'lucide-react';
 import { ViewMode, ChurchConfig } from '../types';
 import { ChurchLogo } from './ChurchLogo';
@@ -41,6 +42,8 @@ interface HeaderProps {
   onOpenPraiseTable: () => void;
   onOpenBibleSearch: () => void;
   onOpenBibleReader: () => void;
+  onOpenAccount: () => void;
+  accountEmail: string | null;
   onOpenPrint: () => void;
   onExportICS: () => void;
   onOpenSettings: () => void;
@@ -66,6 +69,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenPraiseTable,
   onOpenBibleSearch,
   onOpenBibleReader,
+  onOpenAccount,
+  accountEmail,
   onOpenPrint,
   onExportICS,
   onOpenSettings,
@@ -330,6 +335,19 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
               <span>성경읽기</span>
+            </button>
+
+            <button
+              onClick={onOpenAccount}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors shadow-xs whitespace-nowrap ${
+                accountEmail
+                  ? 'bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-400 border-sky-500/30'
+                  : 'bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)]'
+              }`}
+              title="이메일로 로그인하면 여러 기기에서 일정이 동기화됩니다"
+            >
+              <Cloud className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{accountEmail ? accountEmail.split('@')[0] : '동기화'}</span>
             </button>
           </div>
 

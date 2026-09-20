@@ -19,6 +19,8 @@ import { PraiseTableModal } from './components/PraiseTableModal';
 import { AISermonModal } from './components/AISermonModal';
 import { BibleSearchModal } from './components/BibleSearchModal';
 import { BibleReaderModal } from './components/BibleReaderModal';
+import { AccountModal } from './components/AccountModal';
+import { initSync, getAuth, watchUserDoc, saveUserDoc, SYNC_ENABLED } from './utils/accountSync';
 
 import { ChurchEvent, EventCategory, ViewMode, ChurchConfig, RecurringTemplate } from './types';
 import { INITIAL_EVENTS } from './data/seedEvents';
@@ -130,6 +132,60 @@ export default function App() {
       console.error('Failed to save to localStorage', e);
     }
   }, [events]);
+
+  /* ================= 이메일 계정 기반 기기 간 동기화 ================= */
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const accountUidRef = React.useRef<string | null>(null);
+  const applyingRemoteRef = React.useRef(false);
+
+  useEffect(() => {
+    if (!SYNC_ENABLED) return;
+    initSync();
+    const auth = getAuth();
+    if (!auth) return;
+    let unsubDoc: (() => void) | null = null;
+
+    const unsubAuth = auth.onAuthStateChanged((user: any) => {
+      if (unsubDoc) {
+        unsubDoc();
+        unsubDoc = null;
+      }
+      if (user) {
+        accountUidRef.current = user.uid;
+        setAccountEmail(user.email);
+        unsubDoc = watchUserDoc(user.uid, (data) => {
+          applyingRemoteRef.current = true;
+          if (data) {
+            if (Array.isArray(data.events)) setEvents(data.events);
+            if (data.churchConfig) setChurchConfig(data.churchConfig);
+          } else {
+            // 이 계정으로는 처음 로그인 → 지금 갖고 있는 로컬 데이터를 클라우드의 시작값으로 저장
+            saveUserDoc(user.uid, { events, churchConfig });
+          }
+          setTimeout(() => {
+            applyingRemoteRef.current = false;
+          }, 0);
+        });
+      } else {
+        accountUidRef.current = null;
+        setAccountEmail(null);
+      }
+    });
+
+    return () => {
+      unsubAuth();
+      if (unsubDoc) unsubDoc();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 로그인 상태에서 일정/설정이 바뀌면 클라우드에도 저장 (다른 기기와 동기화)
+  useEffect(() => {
+    if (!accountUidRef.current || applyingRemoteRef.current) return;
+    saveUserDoc(accountUidRef.current, { events, churchConfig });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events, churchConfig, accountEmail]);
 
   // Calendar Navigation State
   // Default to 2026 October where the rich seed events reside
@@ -361,6 +417,8 @@ export default function App() {
           onOpenPraiseTable={() => setIsPraiseTableOpen(true)}
           onOpenBibleSearch={() => setIsBibleSearchOpen(true)}
           onOpenBibleReader={() => setIsBibleReaderOpen(true)}
+          onOpenAccount={() => setIsAccountOpen(true)}
+          accountEmail={accountEmail}
           onOpenPrint={() => setIsPrintOpen(true)}
           onExportICS={handleExportICS}
           onOpenSettings={() => setIsSettingsOpen(true)}
@@ -559,6 +617,12 @@ export default function App() {
       <BibleReaderModal
         isOpen={isBibleReaderOpen}
         onClose={() => setIsBibleReaderOpen(false)}
+      />
+
+      <AccountModal
+        isOpen={isAccountOpen}
+        onClose={() => setIsAccountOpen(false)}
+        currentEmail={accountEmail}
       />
     </div>
   );
