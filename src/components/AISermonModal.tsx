@@ -1,6 +1,26 @@
-import React, { useState } from 'react';
-import { X, Sparkles, BookOpen, Share2, Calendar, Check, Download, Layers, Quote } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Sparkles, BookOpen, Share2, Calendar, Check, Download, Layers, Quote, Eraser } from 'lucide-react';
 import { ChurchEvent } from '../types';
+
+const DRAFT_KEY = 'church-calendar-sermon-draft-v1';
+
+interface SermonDraft {
+  date: string;
+  sermonTitle: string;
+  sermonSpeaker: string;
+  sermonBible: string;
+  rawText: string;
+  summaryPoints: string[];
+}
+
+function loadDraft(): SermonDraft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 interface AISermonModalProps {
   isOpen: boolean;
@@ -24,25 +44,66 @@ export const AISermonModal: React.FC<AISermonModalProps> = ({
   const monthNum = baseMonth + 1;
   const defaultDateStr = `${baseYear}-${String(monthNum).padStart(2, '0')}-04`;
 
+  // 이전에 쓰다 만 내용(임시저장)이 있으면 그걸로 시작하고, 없으면 예시 문구로 시작합니다.
+  const draft = loadDraft();
+
   // Form States
-  const [date, setDate] = useState(defaultDateStr);
-  const [sermonTitle, setSermonTitle] = useState('은혜 위에 은혜라');
-  const [sermonSpeaker, setSermonSpeaker] = useState('정현 목사');
-  const [sermonBible, setSermonBible] = useState('요한복음 1장 14~18절');
+  const [date, setDate] = useState(draft?.date || defaultDateStr);
+  const [sermonTitle, setSermonTitle] = useState(draft?.sermonTitle ?? '은혜 위에 은혜라');
+  const [sermonSpeaker, setSermonSpeaker] = useState(draft?.sermonSpeaker ?? '정현 목사');
+  const [sermonBible, setSermonBible] = useState(draft?.sermonBible ?? '요한복음 1장 14~18절');
   const [rawText, setRawText] = useState(
-    '말씀이 육신이 되어 우리 가운데 거하시매 우리가 그의 영광을 보니 아버지의 독생자의 영광이요 은혜와 진리가 충만하더라. 우리는 하나님의 무한한 사랑과 구원의 은혜로 살아가며, 어두운 세상 속에서 진리의 빛을 발하는 성도가 되어야 합니다.'
+    draft?.rawText ??
+      '말씀이 육신이 되어 우리 가운데 거하시매 우리가 그의 영광을 보니 아버지의 독생자의 영광이요 은혜와 진리가 충만하더라. 우리는 하나님의 무한한 사랑과 구원의 은혜로 살아가며, 어두운 세상 속에서 진리의 빛을 발하는 성도가 되어야 합니다.'
   );
 
-  const [summaryPoints, setSummaryPoints] = useState<string[]>([
-    '1. 말씀이 육신이 되어 우리 가운데 거하시는 하나님 은혜',
-    '2. 세상의 어둠을 이기는 독생자의 충만한 은혜와 진리',
-    '3. 매일의 삶 속에서 구원의 감사와 사랑을 전하는 공동체',
-  ]);
+  const [summaryPoints, setSummaryPoints] = useState<string[]>(
+    draft?.summaryPoints ?? [
+      '1. 말씀이 육신이 되어 우리 가운데 거하시는 하나님 은혜',
+      '2. 세상의 어둠을 이기는 독생자의 충만한 은혜와 진리',
+      '3. 매일의 삶 속에서 구원의 감사와 사랑을 전하는 공동체',
+    ]
+  );
 
   const [cardTheme, setCardTheme] = useState<CardTheme>('navy');
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [applied, setApplied] = useState(false);
+  const [savedIndicator, setSavedIndicator] = useState(false);
+  const firstRender = useRef(true);
+
+  // 입력하는 대로 자동으로 임시저장 (등록 버튼을 안 눌러도, 창을 닫았다 다시 열어도 남습니다)
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    try {
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({ date, sermonTitle, sermonSpeaker, sermonBible, rawText, summaryPoints })
+      );
+      setSavedIndicator(true);
+      const t = setTimeout(() => setSavedIndicator(false), 1200);
+      return () => clearTimeout(t);
+    } catch (e) {
+      console.error('임시저장 실패', e);
+    }
+  }, [date, sermonTitle, sermonSpeaker, sermonBible, rawText, summaryPoints]);
+
+  const handleClearDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      // ignore
+    }
+    setDate(defaultDateStr);
+    setSermonTitle('');
+    setSermonSpeaker('');
+    setSermonBible('');
+    setRawText('');
+    setSummaryPoints(['', '', '']);
+  };
 
   // AI Summary Generator Simulation
   const handleGenerateAISummary = () => {
@@ -161,6 +222,9 @@ export const AISermonModal: React.FC<AISermonModalProps> = ({
               </h3>
               <p className="text-xs text-[var(--ink-soft)]">
                 주일 설교 핵심 요약 및 카카오톡/SNS 공유용 말씀 카드를 자동 생성합니다.
+                <span className={`ml-2 text-[10px] font-semibold transition-opacity ${savedIndicator ? 'opacity-100 text-emerald-600 dark:text-emerald-400' : 'opacity-0'}`}>
+                  ✓ 자동 저장됨
+                </span>
               </p>
             </div>
           </div>
@@ -178,10 +242,21 @@ export const AISermonModal: React.FC<AISermonModalProps> = ({
           {/* Left Column: Form & Inputs */}
           <div className="lg:col-span-6 space-y-4">
             <div className="space-y-3 bg-[var(--surface-soft)]/50 p-4 rounded-2xl border border-[var(--line-soft)]">
-              <h4 className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
-                <Quote className="w-3.5 h-3.5 text-amber-500" />
-                <span>주일 설교 정보 입력</span>
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
+                  <Quote className="w-3.5 h-3.5 text-amber-500" />
+                  <span>주일 설교 정보 입력</span>
+                </h4>
+                <button
+                  type="button"
+                  onClick={handleClearDraft}
+                  title="입력한 내용을 모두 지우고 새로 시작합니다"
+                  className="text-[10px] px-2 py-0.5 rounded-full border border-[var(--line)] text-[var(--ink-faint)] hover:text-[var(--ink)] hover:bg-[var(--surface)] flex items-center gap-1"
+                >
+                  <Eraser className="w-3 h-3" />
+                  <span>새로 시작</span>
+                </button>
+              </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
