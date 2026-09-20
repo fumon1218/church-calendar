@@ -150,6 +150,11 @@ export default function App() {
     latestChurchConfigRef.current = churchConfig;
   }, [churchConfig]);
 
+  // 이 기기에서 마지막으로 데이터를 바꾼 시각. 이 값보다 "오래된"(더 이전 시각의) 클라우드
+  // 데이터가 오면, 그건 옛날 것이므로 절대 적용하지 않고 무시합니다.
+  // (Firestore 연결이 불안정할 때, 예전 캐시 데이터가 방금 만든 내용을 덮어쓰는 사고를 막습니다)
+  const lastLocalUpdateAtRef = React.useRef<number>(0);
+
   useEffect(() => {
     if (!SYNC_ENABLED) return;
     initSync();
@@ -166,21 +171,27 @@ export default function App() {
         accountUidRef.current = user.uid;
         setAccountEmail(user.email);
         unsubDoc = watchUserDoc(user.uid, (data) => {
-          applyingRemoteRef.current = true;
           if (data) {
+            const remoteUpdatedAt = typeof data.updatedAt === 'number' ? data.updatedAt : 0;
+            if (remoteUpdatedAt < lastLocalUpdateAtRef.current) {
+              // 이 기기에서 이미 더 최신 데이터를 만든 상태 → 오래된 클라우드 데이터는 무시합니다.
+              return;
+            }
+            applyingRemoteRef.current = true;
             if (Array.isArray(data.events)) setEvents(data.events);
             if (data.churchConfig) setChurchConfig(data.churchConfig);
+            setTimeout(() => {
+              applyingRemoteRef.current = false;
+            }, 0);
           } else {
             // 이 계정으로는 처음 로그인 → "지금 이 순간" 갖고 있는 최신 로컬 데이터를
             // 클라우드의 시작값으로 저장합니다. (오래된 값이 아니라 항상 최신 값을 씁니다)
+            lastLocalUpdateAtRef.current = Date.now();
             saveUserDoc(user.uid, {
               events: latestEventsRef.current,
               churchConfig: latestChurchConfigRef.current,
             });
           }
-          setTimeout(() => {
-            applyingRemoteRef.current = false;
-          }, 0);
         });
       } else {
         accountUidRef.current = null;
@@ -198,6 +209,7 @@ export default function App() {
   // 로그인 상태에서 일정/설정이 바뀌면 클라우드에도 저장 (다른 기기와 동기화)
   useEffect(() => {
     if (!accountUidRef.current || applyingRemoteRef.current) return;
+    lastLocalUpdateAtRef.current = Date.now();
     saveUserDoc(accountUidRef.current, { events, churchConfig });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, churchConfig, accountEmail]);
