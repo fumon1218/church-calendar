@@ -296,15 +296,12 @@ export default function App() {
       showToast(`'${data.title}' 일정이 수정되었습니다.`);
     } else {
       // Create new
+      // (data에 있는 모든 항목을 그대로 살립니다 — 설교 제목/설교자/본문/요약, 위치 좌표 등이
+      //  누락되지 않도록 일부 필드만 골라 담지 않고 전체를 옮깁니다)
       const newEvent: ChurchEvent = {
+        ...data,
         id: `ev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        date: data.date,
-        category: data.category,
-        title: data.title,
-        time: data.time,
-        memo: data.memo,
-        location: data.location,
-      };
+      } as ChurchEvent;
       setEvents((prev) => [...prev, newEvent]);
       showToast(`'${data.title}' 새 일정이 등록되었습니다.`);
     }
