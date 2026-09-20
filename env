@@ -1,0 +1,14 @@
+# GEMINI_API_KEY: Required for Gemini AI API calls.
+# AI Studio automatically injects this at runtime from user secrets.
+# Users configure this via the Secrets panel in the AI Studio UI.
+GEMINI_API_KEY="MY_GEMINI_API_KEY"
+
+# APP_URL: The URL where this applet is hosted.
+# AI Studio automatically injects this at runtime with the Cloud Run service URL.
+# Used for self-referential links, OAuth callbacks, and API endpoints.
+APP_URL="MY_APP_URL"
+
+# VITE_KAKAO_APP_KEY: 카카오 개발자(developers.kakao.com)에서 발급받은 "JavaScript 키".
+# 설정하면 장소/주소 검색, 지도 미리보기 기능이 켜집니다. 비워두면 해당 기능만 자동으로 숨겨집니다.
+# 카카오 개발자 콘솔의 "플랫폼 > Web"에 이 앱이 배포되는 도메인을 꼭 등록해주세요.
+VITE_KAKAO_APP_KEY="12e556b010a34f4a8939e731a0c88861"
