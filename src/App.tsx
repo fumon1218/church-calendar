@@ -138,6 +138,17 @@ export default function App() {
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const accountUidRef = React.useRef<string | null>(null);
   const applyingRemoteRef = React.useRef(false);
+  // events/churchConfig의 "최신 값"을 항상 담아두는 참조입니다.
+  // (아래 onSnapshot 콜백은 로그인 시 한 번만 만들어지기 때문에, 그냥 state를 직접 참조하면
+  //  그 시점의 오래된 값을 계속 쓰게 되는 문제가 있어 ref로 최신 값을 따로 추적합니다)
+  const latestEventsRef = React.useRef(events);
+  const latestChurchConfigRef = React.useRef(churchConfig);
+  useEffect(() => {
+    latestEventsRef.current = events;
+  }, [events]);
+  useEffect(() => {
+    latestChurchConfigRef.current = churchConfig;
+  }, [churchConfig]);
 
   useEffect(() => {
     if (!SYNC_ENABLED) return;
@@ -160,8 +171,12 @@ export default function App() {
             if (Array.isArray(data.events)) setEvents(data.events);
             if (data.churchConfig) setChurchConfig(data.churchConfig);
           } else {
-            // 이 계정으로는 처음 로그인 → 지금 갖고 있는 로컬 데이터를 클라우드의 시작값으로 저장
-            saveUserDoc(user.uid, { events, churchConfig });
+            // 이 계정으로는 처음 로그인 → "지금 이 순간" 갖고 있는 최신 로컬 데이터를
+            // 클라우드의 시작값으로 저장합니다. (오래된 값이 아니라 항상 최신 값을 씁니다)
+            saveUserDoc(user.uid, {
+              events: latestEventsRef.current,
+              churchConfig: latestChurchConfigRef.current,
+            });
           }
           setTimeout(() => {
             applyingRemoteRef.current = false;
