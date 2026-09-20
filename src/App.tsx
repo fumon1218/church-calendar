@@ -33,6 +33,8 @@ import { CheckCircle2, Sparkles, CalendarDays } from 'lucide-react';
 const STORAGE_EVENTS_KEY = 'church-calendar-events-v1';
 const STORAGE_CONFIG_KEY = 'church-calendar-config-v1';
 const STORAGE_THEME_KEY = 'church-calendar-theme-v1';
+const STORAGE_LAST_LOCAL_UPDATE_KEY = 'church-calendar-last-local-update-v1';
+const STORAGE_SYNC_MIGRATED_KEY = 'church-calendar-sync-migrated-v2';
 
 export default function App() {
   // Theme state
@@ -153,7 +155,20 @@ export default function App() {
   // 이 기기에서 마지막으로 데이터를 바꾼 시각. 이 값보다 "오래된"(더 이전 시각의) 클라우드
   // 데이터가 오면, 그건 옛날 것이므로 절대 적용하지 않고 무시합니다.
   // (Firestore 연결이 불안정할 때, 예전 캐시 데이터가 방금 만든 내용을 덮어쓰는 사고를 막습니다)
-  const lastLocalUpdateAtRef = React.useRef<number>(0);
+  // 새로고침해도 이 "기억"이 사라지지 않도록 localStorage에도 같이 저장합니다.
+  const lastLocalUpdateAtRef = React.useRef<number>(
+    Number(localStorage.getItem(STORAGE_LAST_LOCAL_UPDATE_KEY)) || 0
+  );
+  const markLocalUpdateNow = () => {
+    const now = Date.now();
+    lastLocalUpdateAtRef.current = now;
+    try {
+      localStorage.setItem(STORAGE_LAST_LOCAL_UPDATE_KEY, String(now));
+    } catch {
+      // ignore
+    }
+    return now;
+  };
 
   useEffect(() => {
     if (!SYNC_ENABLED) return;
@@ -171,22 +186,51 @@ export default function App() {
         accountUidRef.current = user.uid;
         setAccountEmail(user.email);
         unsubDoc = watchUserDoc(user.uid, (data) => {
+          // 이 기기에서 "이번에 새로 고친 버전"으로는 아직 한 번도 동기화한 적이 없다면,
+          // 예전에 서버에 잘못 저장돼 있을 수 있는 데이터는 신경 쓰지 않고
+          // 지금 이 기기가 갖고 있는 최신 데이터를 그대로 기준으로 삼아 클라우드에 덮어씁니다. (딱 한 번만)
+          const alreadyMigrated = localStorage.getItem(STORAGE_SYNC_MIGRATED_KEY) === '1';
+          if (!alreadyMigrated) {
+            try {
+              localStorage.setItem(STORAGE_SYNC_MIGRATED_KEY, '1');
+            } catch {
+              // ignore
+            }
+            markLocalUpdateNow();
+            saveUserDoc(user.uid, {
+              events: latestEventsRef.current,
+              churchConfig: latestChurchConfigRef.current,
+            });
+            return;
+          }
+
           if (data) {
             const remoteUpdatedAt = typeof data.updatedAt === 'number' ? data.updatedAt : 0;
             if (remoteUpdatedAt < lastLocalUpdateAtRef.current) {
-              // 이 기기에서 이미 더 최신 데이터를 만든 상태 → 오래된 클라우드 데이터는 무시합니다.
+              // 이 기기에서 이미 더 최신 데이터를 만든 상태 → 오래된 클라우드 데이터는 무시하고,
+              // 대신 이 기기의 최신 데이터를 다시 클라우드로 밀어 올려서 클라우드도 최신으로 맞춰둡니다.
+              saveUserDoc(user.uid, {
+                events: latestEventsRef.current,
+                churchConfig: latestChurchConfigRef.current,
+              });
               return;
             }
             applyingRemoteRef.current = true;
             if (Array.isArray(data.events)) setEvents(data.events);
             if (data.churchConfig) setChurchConfig(data.churchConfig);
+            lastLocalUpdateAtRef.current = remoteUpdatedAt;
+            try {
+              localStorage.setItem(STORAGE_LAST_LOCAL_UPDATE_KEY, String(remoteUpdatedAt));
+            } catch {
+              // ignore
+            }
             setTimeout(() => {
               applyingRemoteRef.current = false;
             }, 0);
           } else {
             // 이 계정으로는 처음 로그인 → "지금 이 순간" 갖고 있는 최신 로컬 데이터를
             // 클라우드의 시작값으로 저장합니다. (오래된 값이 아니라 항상 최신 값을 씁니다)
-            lastLocalUpdateAtRef.current = Date.now();
+            markLocalUpdateNow();
             saveUserDoc(user.uid, {
               events: latestEventsRef.current,
               churchConfig: latestChurchConfigRef.current,
@@ -209,7 +253,7 @@ export default function App() {
   // 로그인 상태에서 일정/설정이 바뀌면 클라우드에도 저장 (다른 기기와 동기화)
   useEffect(() => {
     if (!accountUidRef.current || applyingRemoteRef.current) return;
-    lastLocalUpdateAtRef.current = Date.now();
+    markLocalUpdateNow();
     saveUserDoc(accountUidRef.current, { events, churchConfig });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, churchConfig, accountEmail]);
