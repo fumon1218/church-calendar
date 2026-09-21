@@ -349,21 +349,6 @@ export const Header: React.FC<HeaderProps> = ({
               <Cloud className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{accountEmail ? accountEmail.split('@')[0] : '동기화'}</span>
             </button>
-
-            <a
-              href="https://fumon1218.github.io/bible-memory-app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] transition-colors shadow-xs whitespace-nowrap"
-              title="암송수첩 (새 탭에서 열림)"
-            >
-              <img
-                src={`${import.meta.env.BASE_URL}logo.svg`}
-                alt=""
-                className="w-3.5 h-3.5 rounded-full object-cover flex-shrink-0"
-              />
-              <span>암송수첩</span>
-            </a>
           </div>
 
           {/* Manual Add Event */}
