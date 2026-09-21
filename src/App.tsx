@@ -13,6 +13,7 @@ import { DayDetailPanel } from './components/DayDetailPanel';
 import { AIPhotoModal } from './components/AIPhotoModal';
 import { AITextModal } from './components/AITextModal';
 import { EventFormModal } from './components/EventFormModal';
+import { CategoryEditorModal } from './components/CategoryEditorModal';
 import { PrintViewModal } from './components/PrintViewModal';
 import { SettingsModal } from './components/SettingsModal';
 import { PraiseTableModal } from './components/PraiseTableModal';
@@ -33,7 +34,8 @@ import {
   watchEvents,
 } from './utils/accountSync';
 
-import { ChurchEvent, EventCategory, ViewMode, ChurchConfig, RecurringTemplate } from './types';
+import { ChurchEvent, EventCategory, CategoryMeta, ViewMode, ChurchConfig, RecurringTemplate } from './types';
+import { CATEGORIES, applyCategories } from './data/categories';
 import { INITIAL_EVENTS } from './data/seedEvents';
 import { generateICS, downloadFile, getTodayStr } from './utils/calendar';
 import { fetchHolidaysAround, HolidayMap } from './utils/holidays';
@@ -80,9 +82,18 @@ export default function App() {
   });
 
   const handleUpdateChurchConfig = (cfg: ChurchConfig) => {
-    setChurchConfig(cfg);
-    localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(cfg));
+    // 교회 정보만 저장하는 곳에서도 부서 분류(categories)가 사라지지 않도록 기존 값을 이어 붙입니다.
+    const next: ChurchConfig = { ...cfg, categories: cfg.categories ?? churchConfig.categories };
+    setChurchConfig(next);
+    localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(next));
   };
+
+  // 저장된 부서 분류를 화면 전체가 쓰는 분류 목록에 반영합니다.
+  // (렌더링 중에 실행되므로, 아래에서 그려지는 모든 화면이 항상 최신 분류를 봅니다)
+  useMemo(() => {
+    applyCategories(churchConfig.categories);
+  }, [churchConfig.categories]);
+  const [isCategoryEditorOpen, setIsCategoryEditorOpen] = useState(false);
 
   // Events Data
   const [events, setEvents] = useState<ChurchEvent[]>(() => {
@@ -216,7 +227,13 @@ export default function App() {
               return;
             }
             applyingRemoteRef.current = true;
-            if (data.churchConfig) setChurchConfig(data.churchConfig);
+            if (data.churchConfig) {
+              const remoteCfg = data.churchConfig;
+              setChurchConfig((prev) => ({
+                ...remoteCfg,
+                categories: remoteCfg.categories ?? prev.categories,
+              }));
+            }
             lastLocalUpdateAtRef.current = remoteUpdatedAt;
             try {
               localStorage.setItem(STORAGE_LAST_LOCAL_UPDATE_KEY, String(remoteUpdatedAt));
@@ -491,6 +508,15 @@ export default function App() {
     showToast(`'${target?.title || '일정'}'이 삭제되었습니다.`);
   };
 
+  const handleUpdateCategories = (list: CategoryMeta[]) => {
+    handleUpdateChurchConfig({ ...churchConfig, categories: list });
+    // 지금 보고 있는 필터 분류가 없어졌다면 '전체'로 되돌립니다.
+    if (selectedCategory !== 'all' && !list.some((c) => c.id === selectedCategory)) {
+      setSelectedCategory('all');
+    }
+    showToast('부서 분류가 저장되었습니다.');
+  };
+
   const handleBulkAddEvents = (newItems: Omit<ChurchEvent, 'id'>[]) => {
     const created = newItems.map((item, idx) => ({
       ...item,
@@ -621,6 +647,7 @@ export default function App() {
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
           events={events}
+          onEditCategories={() => setIsCategoryEditorOpen(true)}
         />
 
         <TodaysVerseBanner />
@@ -836,6 +863,15 @@ export default function App() {
         onDelete={handleDeleteEvent}
         initialDate={formInitialDate}
         initialEvent={editingEvent}
+        onEditCategories={() => setIsCategoryEditorOpen(true)}
+      />
+
+      <CategoryEditorModal
+        isOpen={isCategoryEditorOpen}
+        onClose={() => setIsCategoryEditorOpen(false)}
+        categories={CATEGORIES}
+        events={events}
+        onSave={handleUpdateCategories}
       />
 
       <PrintViewModal

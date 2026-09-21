@@ -1,4 +1,6 @@
-export type EventCategory = 'worship' | 'district' | 'youth' | 'praise' | 'event' | 'family';
+// 기본 분류 id: 'worship' | 'district' | 'youth' | 'praise' | 'event' | 'family'
+// 사용자가 직접 만든 분류는 'cat-...' 형태의 id를 가지므로 문자열 전체를 허용합니다.
+export type EventCategory = string;
 
 export interface ChurchEvent {
   id: string;
@@ -39,6 +41,7 @@ export interface ChurchConfig {
   locationLabel?: string; // 교회 위치 표시 이름 (날씨 예보 기준점)
   lat?: number;
   lng?: number;
+  categories?: CategoryMeta[]; // 부서 분류 목록 (직접 만들거나 이름·색상을 바꾼 결과. 비어 있으면 기본 분류)
 }
 
 export interface CalendarDayCell {

@@ -95,9 +95,7 @@ export const AIPhotoModal: React.FC<AIPhotoModalProps> = ({
         id: `parsed-${idx}-${Date.now()}`,
         selected: true,
         date: ev.date || `${baseYear}-${String(baseMonth + 1).padStart(2, '0')}-01`,
-        category: (['worship', 'district', 'youth', 'praise', 'event', 'family'].includes(ev.category)
-          ? ev.category
-          : 'event') as EventCategory,
+        category: (CATEGORY_MAP[ev.category] ? ev.category : 'event') as EventCategory,
         title: ev.title || '새 일정',
         time: ev.time || '',
         memo: ev.memo || '',

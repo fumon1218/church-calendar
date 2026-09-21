@@ -88,6 +88,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateChurchConfig({
+      ...churchConfig,
       churchName: churchName.trim() || '교회',
       subTitle: subTitle.trim() || '부서 일정 달력',
       motto: motto.trim() || '말씀과 기도로 거룩하여지는 공동체',

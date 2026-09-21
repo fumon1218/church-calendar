@@ -1,4 +1,5 @@
 import React from 'react';
+import { Pencil } from 'lucide-react';
 import { CATEGORIES } from '../data/categories';
 import { EventCategory, ChurchEvent } from '../types';
 
@@ -6,12 +7,14 @@ interface CategoryFilterBarProps {
   selectedCategory: EventCategory | 'all';
   onSelectCategory: (cat: EventCategory | 'all') => void;
   events: ChurchEvent[];
+  onEditCategories?: () => void;
 }
 
 export const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({
   selectedCategory,
   onSelectCategory,
   events,
+  onEditCategories,
 }) => {
   // Compute counts per category
   const countMap = events.reduce((acc, ev) => {
@@ -70,6 +73,18 @@ export const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({
           </button>
         );
       })}
+
+      {onEditCategories && (
+        <button
+          type="button"
+          onClick={onEditCategories}
+          title="부서 분류 만들기·편집"
+          className="px-3 py-1.5 rounded-full whitespace-nowrap transition-all font-medium flex items-center gap-1.5 border border-dashed border-[var(--line)] text-[var(--ink-faint)] hover:text-[var(--ink)] hover:border-[var(--ink-faint)]"
+        >
+          <Pencil className="w-3 h-3" />
+          <span>분류 편집</span>
+        </button>
+      )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
-import { ChurchEvent, EventCategory } from '../types';
+import { ChurchEvent } from '../types';
+import { CATEGORY_MAP } from '../data/categories';
 
 // CSV의 각 칸(필드)에 쉼표/따옴표/줄바꿈이 있어도 안전하게 감싸줍니다.
 function csvEscape(value: any): string {
@@ -95,8 +96,6 @@ function parseCsvText(text: string): string[][] {
   return rows.filter((r) => r.some((f) => f.trim() !== ''));
 }
 
-const VALID_CATEGORIES: EventCategory[] = ['worship', 'district', 'youth', 'praise', 'event', 'family'];
-
 export function parseEventsFromCsv(text: string): Partial<ChurchEvent>[] {
   // 맨 앞 BOM 제거
   const cleaned = text.replace(/^\uFEFF/, '');
@@ -124,6 +123,6 @@ export function parseEventsFromCsv(text: string): Partial<ChurchEvent>[] {
     .filter((obj) => obj.date && obj.title)
     .map((obj) => ({
       ...obj,
-      category: VALID_CATEGORIES.includes(obj.category) ? obj.category : 'event',
+      category: CATEGORY_MAP[obj.category] ? obj.category : 'event',
     }));
 }

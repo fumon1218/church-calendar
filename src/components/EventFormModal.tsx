@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChurchEvent, EventCategory } from '../types';
 import { CATEGORIES } from '../data/categories';
 import { getStoredRecurringTemplates } from '../data/recurringTemplates';
-import { X, Calendar, Clock, MapPin, Tag, Zap, Trash2 } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, Tag, Zap, Trash2, Pencil } from 'lucide-react';
 import { AddressSearchInput } from './AddressSearchInput';
 import { KakaoMapPreview } from './KakaoMapPreview';
 
@@ -13,6 +13,7 @@ interface EventFormModalProps {
   onDelete?: (id: string) => void;
   initialDate?: string;
   initialEvent?: ChurchEvent | null;
+  onEditCategories?: () => void;
 }
 
 export const EventFormModal: React.FC<EventFormModalProps> = ({
@@ -22,6 +23,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
   onDelete,
   initialDate,
   initialEvent,
+  onEditCategories,
 }) => {
   const [date, setDate] = useState('');
   const [category, setCategory] = useState<EventCategory>('worship');
@@ -157,10 +159,22 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
 
           {/* Category */}
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--ink-soft)] mb-1 flex items-center gap-1">
-              <Tag className="w-3 h-3 text-[var(--ink-faint)]" />
-              <span>부서 분류 *</span>
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[11px] font-semibold text-[var(--ink-soft)] flex items-center gap-1">
+                <Tag className="w-3 h-3 text-[var(--ink-faint)]" />
+                <span>부서 분류 *</span>
+              </label>
+              {onEditCategories && (
+                <button
+                  type="button"
+                  onClick={onEditCategories}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors"
+                >
+                  <Pencil className="w-3 h-3" />
+                  <span>분류 편집·추가</span>
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-3 gap-1.5">
               {CATEGORIES.map((c) => {
                 const isSelected = category === c.id;
