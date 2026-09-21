@@ -34,7 +34,6 @@ const STORAGE_EVENTS_KEY = 'church-calendar-events-v1';
 const STORAGE_CONFIG_KEY = 'church-calendar-config-v1';
 const STORAGE_THEME_KEY = 'church-calendar-theme-v1';
 const STORAGE_LAST_LOCAL_UPDATE_KEY = 'church-calendar-last-local-update-v1';
-const STORAGE_SYNC_MIGRATED_KEY = 'church-calendar-sync-migrated-v2';
 
 export default function App() {
   // Theme state
@@ -186,24 +185,6 @@ export default function App() {
         accountUidRef.current = user.uid;
         setAccountEmail(user.email);
         unsubDoc = watchUserDoc(user.uid, (data) => {
-          // 이 기기에서 "이번에 새로 고친 버전"으로는 아직 한 번도 동기화한 적이 없다면,
-          // 예전에 서버에 잘못 저장돼 있을 수 있는 데이터는 신경 쓰지 않고
-          // 지금 이 기기가 갖고 있는 최신 데이터를 그대로 기준으로 삼아 클라우드에 덮어씁니다. (딱 한 번만)
-          const alreadyMigrated = localStorage.getItem(STORAGE_SYNC_MIGRATED_KEY) === '1';
-          if (!alreadyMigrated) {
-            try {
-              localStorage.setItem(STORAGE_SYNC_MIGRATED_KEY, '1');
-            } catch {
-              // ignore
-            }
-            markLocalUpdateNow();
-            saveUserDoc(user.uid, {
-              events: latestEventsRef.current,
-              churchConfig: latestChurchConfigRef.current,
-            });
-            return;
-          }
-
           if (data) {
             const remoteUpdatedAt = typeof data.updatedAt === 'number' ? data.updatedAt : 0;
             if (remoteUpdatedAt < lastLocalUpdateAtRef.current) {
@@ -257,6 +238,18 @@ export default function App() {
     saveUserDoc(accountUidRef.current, { events, churchConfig });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, churchConfig, accountEmail]);
+
+  // 이 기기(지금 로그인된 브라우저)가 갖고 있는 데이터를 클라우드에 강제로 덮어씁니다.
+  // (다른 기기/예전 로그인 때문에 클라우드에 이상한 데이터가 들어간 경우, 확실한 쪽 기기에서 눌러 바로잡는 용도)
+  const handleForcePushToCloud = () => {
+    if (!accountUidRef.current) return;
+    markLocalUpdateNow();
+    saveUserDoc(accountUidRef.current, {
+      events: latestEventsRef.current,
+      churchConfig: latestChurchConfigRef.current,
+    });
+    showToast('이 기기의 데이터를 클라우드에 저장했습니다.');
+  };
 
   // Calendar Navigation State
   // Default to 2026 October where the rich seed events reside
@@ -691,6 +684,7 @@ export default function App() {
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
         currentEmail={accountEmail}
+        onForcePush={handleForcePushToCloud}
       />
     </div>
   );
