@@ -132,15 +132,21 @@ export function watchUserDoc(uid: string, onData: (data: SyncedData | null) => v
   };
 }
 
-export function saveUserDoc(uid: string, data: SyncedData) {
+export async function saveUserDoc(uid: string, data: SyncedData) {
   const c = getClient();
-  if (!c) return Promise.resolve();
+  if (!c) return;
   const cleaned = JSON.parse(JSON.stringify(data));
   const updatedAt = Date.now();
-  return c.from('user_data').upsert({
+  // 반드시 await로 실제 요청이 나가는 걸 보장합니다.
+  // (그냥 호출만 하고 기다리지 않으면 요청 자체가 안 나갈 수 있습니다)
+  const { error } = await c.from('user_data').upsert({
     user_id: uid,
     events: cleaned.events ?? [],
     church_config: cleaned.churchConfig ?? {},
     updated_at: updatedAt,
   });
+  if (error) {
+    console.error('클라우드 저장 실패:', error);
+    throw error;
+  }
 }
