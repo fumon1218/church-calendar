@@ -151,6 +151,8 @@ export default function App() {
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const accountUidRef = React.useRef<string | null>(null);
   const applyingRemoteRef = React.useRef(false);
+  // 이 기기에서 방금 지운 일정 id들. (지우는 도중에 시작된 '전체 불러오기'가 옛 목록을 가져와도 되살리지 않게 막습니다)
+  const deletedLocallyRef = React.useRef<Set<string>>(new Set());
   // events/churchConfig의 "최신 값"을 항상 담아두는 참조입니다.
   // (아래 onSnapshot 콜백은 로그인 시 한 번만 만들어지기 때문에, 그냥 state를 직접 참조하면
   //  그 시점의 오래된 값을 계속 쓰게 되는 문제가 있어 ref로 최신 값을 따로 추적합니다)
@@ -252,17 +254,24 @@ export default function App() {
 
         // 로그인 시 한 번, 클라우드에 있는 전체 일정을 가져와 합칩니다.
         // (이 기기에만 있고 아직 클라우드에 없는 일정이 있으면, 그건 클라우드로 올려줍니다)
+        // 단, 클라우드에 '삭제됨'으로 기록된 일정은 이 기기에 남아 있어도 지우고, 다시 올리지 않습니다.
         fetchAllEvents(user.uid)
-          .then((remoteEvents) => {
+          .then(({ events: remoteEvents, deletedIds }) => {
+            const tombstoned = new Set<string>(deletedIds);
+            deletedLocallyRef.current.forEach((id) => tombstoned.add(id));
             setEvents((prevLocal) => {
-              const remoteIds = new Set(remoteEvents.map((e: any) => e.id));
-              const localOnly = prevLocal.filter((e) => !remoteIds.has(e.id));
+              const liveRemote = remoteEvents.filter((e: any) => !tombstoned.has(e.id));
+              const knownIds = new Set<string>([
+                ...remoteEvents.map((e: any) => e.id),
+                ...tombstoned,
+              ]);
+              const localOnly = prevLocal.filter((e) => !knownIds.has(e.id));
               localOnly.forEach((e) => {
                 upsertEvent(user.uid, e).catch((err) =>
                   console.error('로컬 전용 일정 업로드 실패:', err)
                 );
               });
-              return [...remoteEvents, ...localOnly];
+              return [...liveRemote, ...localOnly];
             });
           })
           .catch((e) => console.error('일정 전체 불러오기 실패:', e));
@@ -411,11 +420,17 @@ export default function App() {
   // CRUD Handlers
   // 일정 하나를 추가/수정할 때마다 클라우드에도 그 일정 하나만 반영합니다.
   const syncEventUpsert = (event: ChurchEvent) => {
-    if (!accountUidRef.current) return;
+    if (!accountUidRef.current) {
+      console.warn('[sync] 로그인되어 있지 않아 클라우드에는 저장되지 않았습니다:', event.id);
+      return;
+    }
     upsertEvent(accountUidRef.current, event).catch((e) => console.error('일정 동기화 실패:', e));
   };
   const syncEventDelete = (id: string) => {
-    if (!accountUidRef.current) return;
+    if (!accountUidRef.current) {
+      console.warn('[sync] 로그인되어 있지 않아 클라우드에서는 삭제되지 않았습니다:', id);
+      return;
+    }
     deleteEventRemote(accountUidRef.current, id).catch((e) => console.error('일정 삭제 동기화 실패:', e));
   };
 
@@ -466,6 +481,7 @@ export default function App() {
 
   const handleDeleteEvent = (id: string) => {
     const target = events.find((e) => e.id === id);
+    deletedLocallyRef.current.add(id);
     setEvents((prev) => prev.filter((e) => e.id !== id));
     syncEventDelete(id);
     if (editingEvent?.id === id) {
