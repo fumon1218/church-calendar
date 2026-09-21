@@ -79,3 +79,9 @@
   }
 }
 
+/* 일본어/국한문 성경의 발음 표기(루비 텍스트)를 작고 연하게 표시합니다 */
+ruby rt {
+  font-size: 0.55em;
+  color: var(--ink-faint);
+  user-select: none;
+}
