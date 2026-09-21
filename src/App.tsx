@@ -20,7 +20,18 @@ import { AISermonModal } from './components/AISermonModal';
 import { BibleSearchModal } from './components/BibleSearchModal';
 import { BibleReaderModal } from './components/BibleReaderModal';
 import { AccountModal } from './components/AccountModal';
-import { initSync, getAuth, watchUserDoc, saveUserDoc, SYNC_ENABLED } from './utils/accountSync';
+import {
+  initSync,
+  getAuth,
+  watchUserDoc,
+  saveUserDoc,
+  SYNC_ENABLED,
+  fetchAllEvents,
+  upsertEvent,
+  deleteEventRemote,
+  replaceAllEvents,
+  watchEvents,
+} from './utils/accountSync';
 
 import { ChurchEvent, EventCategory, ViewMode, ChurchConfig, RecurringTemplate } from './types';
 import { INITIAL_EVENTS } from './data/seedEvents';
@@ -176,31 +187,33 @@ export default function App() {
     const auth = getAuth();
     if (!auth) return;
     let unsubDoc: (() => void) | null = null;
+    let unsubEvents: (() => void) | null = null;
 
     const unsubAuth = auth.onAuthStateChanged((user: any) => {
       if (unsubDoc) {
         unsubDoc();
         unsubDoc = null;
       }
+      if (unsubEvents) {
+        unsubEvents();
+        unsubEvents = null;
+      }
       if (user) {
         accountUidRef.current = user.uid;
         setAccountEmail(user.email);
+
+        // ---- 교회 설정(church_config) 동기화: 여러 기기가 동시에 바꿀 일이 거의 없어서
+        // 예전처럼 "통째로 최신 걸로 맞추는" 방식을 그대로 씁니다.
         unsubDoc = watchUserDoc(user.uid, (data) => {
           if (data) {
             const remoteUpdatedAt = typeof data.updatedAt === 'number' ? data.updatedAt : 0;
             if (remoteUpdatedAt < lastLocalUpdateAtRef.current) {
-              // 이 기기에서 이미 더 최신 데이터를 만든 상태 → 오래된 클라우드 데이터는 무시하고,
-              // 대신 이 기기의 최신 데이터를 다시 클라우드로 밀어 올려서 클라우드도 최신으로 맞춰둡니다.
-              saveUserDoc(user.uid, {
-                events: latestEventsRef.current,
-                churchConfig: latestChurchConfigRef.current,
-              })
+              saveUserDoc(user.uid, { churchConfig: latestChurchConfigRef.current })
                 .then(applyLocalTimestamp)
                 .catch((e) => console.error('클라우드 재동기화 실패:', e));
               return;
             }
             applyingRemoteRef.current = true;
-            if (Array.isArray(data.events)) setEvents(data.events);
             if (data.churchConfig) setChurchConfig(data.churchConfig);
             lastLocalUpdateAtRef.current = remoteUpdatedAt;
             try {
@@ -212,16 +225,47 @@ export default function App() {
               applyingRemoteRef.current = false;
             }, 0);
           } else {
-            // 이 계정으로는 처음 로그인 → "지금 이 순간" 갖고 있는 최신 로컬 데이터를
-            // 클라우드의 시작값으로 저장합니다. (오래된 값이 아니라 항상 최신 값을 씁니다)
-            saveUserDoc(user.uid, {
-              events: latestEventsRef.current,
-              churchConfig: latestChurchConfigRef.current,
-            })
+            saveUserDoc(user.uid, { churchConfig: latestChurchConfigRef.current })
               .then(applyLocalTimestamp)
               .catch((e) => console.error('클라우드 초기 저장 실패:', e));
           }
         });
+
+        // ---- 일정(events) 동기화: 일정 하나하나를 개별로 실시간 반영합니다.
+        // 다른 일정과는 절대 충돌하지 않고, 같은 일정을 두 기기에서 "동시에" 바꿀 때만
+        // (아주 드문 경우) 나중에 저장되는 쪽이 반영됩니다.
+        unsubEvents = watchEvents(
+          user.uid,
+          (remoteEvent) => {
+            setEvents((prev) => {
+              const idx = prev.findIndex((e) => e.id === remoteEvent.id);
+              if (idx === -1) return [...prev, remoteEvent];
+              const next = [...prev];
+              next[idx] = remoteEvent;
+              return next;
+            });
+          },
+          (deletedId) => {
+            setEvents((prev) => prev.filter((e) => e.id !== deletedId));
+          }
+        );
+
+        // 로그인 시 한 번, 클라우드에 있는 전체 일정을 가져와 합칩니다.
+        // (이 기기에만 있고 아직 클라우드에 없는 일정이 있으면, 그건 클라우드로 올려줍니다)
+        fetchAllEvents(user.uid)
+          .then((remoteEvents) => {
+            setEvents((prevLocal) => {
+              const remoteIds = new Set(remoteEvents.map((e: any) => e.id));
+              const localOnly = prevLocal.filter((e) => !remoteIds.has(e.id));
+              localOnly.forEach((e) => {
+                upsertEvent(user.uid, e).catch((err) =>
+                  console.error('로컬 전용 일정 업로드 실패:', err)
+                );
+              });
+              return [...remoteEvents, ...localOnly];
+            });
+          })
+          .catch((e) => console.error('일정 전체 불러오기 실패:', e));
       } else {
         accountUidRef.current = null;
         setAccountEmail(null);
@@ -231,28 +275,30 @@ export default function App() {
     return () => {
       unsubAuth();
       if (unsubDoc) unsubDoc();
+      if (unsubEvents) unsubEvents();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 로그인 상태에서 일정/설정이 바뀌면 클라우드에도 저장 (다른 기기와 동기화)
+  // 교회 설정(church_config)이 바뀌면 클라우드에도 저장 (일정은 각 변경 지점에서 개별로 저장합니다)
   useEffect(() => {
     if (!accountUidRef.current || applyingRemoteRef.current) return;
-    saveUserDoc(accountUidRef.current, { events, churchConfig })
+    saveUserDoc(accountUidRef.current, { churchConfig })
       .then(applyLocalTimestamp)
       .catch((e) => console.error('클라우드 자동 저장 실패:', e));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events, churchConfig, accountEmail]);
+  }, [churchConfig, accountEmail]);
 
   // 이 기기(지금 로그인된 브라우저)가 갖고 있는 데이터를 클라우드에 강제로 덮어씁니다.
   // (다른 기기/예전 로그인 때문에 클라우드에 이상한 데이터가 들어간 경우, 확실한 쪽 기기에서 눌러 바로잡는 용도)
   const handleForcePushToCloud = () => {
     if (!accountUidRef.current) return;
-    saveUserDoc(accountUidRef.current, {
-      events: latestEventsRef.current,
-      churchConfig: latestChurchConfigRef.current,
-    })
-      .then((ts) => {
+    const uid = accountUidRef.current;
+    Promise.all([
+      replaceAllEvents(uid, latestEventsRef.current),
+      saveUserDoc(uid, { churchConfig: latestChurchConfigRef.current }),
+    ])
+      .then(([, ts]) => {
         applyLocalTimestamp(ts);
         showToast('이 기기의 데이터를 클라우드에 저장했습니다.');
       })
@@ -363,14 +409,24 @@ export default function App() {
   }, [events, selectedCategory, searchQuery]);
 
   // CRUD Handlers
+  // 일정 하나를 추가/수정할 때마다 클라우드에도 그 일정 하나만 반영합니다.
+  const syncEventUpsert = (event: ChurchEvent) => {
+    if (!accountUidRef.current) return;
+    upsertEvent(accountUidRef.current, event).catch((e) => console.error('일정 동기화 실패:', e));
+  };
+  const syncEventDelete = (id: string) => {
+    if (!accountUidRef.current) return;
+    deleteEventRemote(accountUidRef.current, id).catch((e) => console.error('일정 삭제 동기화 실패:', e));
+  };
+
   const handleSaveEvent = (
     data: Partial<ChurchEvent> & { title: string; category: EventCategory; date: string }
   ) => {
     if (data.id) {
       // Update existing
-      setEvents((prev) =>
-        prev.map((e) => (e.id === data.id ? ({ ...e, ...data } as ChurchEvent) : e))
-      );
+      const updated = { ...(events.find((e) => e.id === data.id) as ChurchEvent), ...data } as ChurchEvent;
+      setEvents((prev) => prev.map((e) => (e.id === data.id ? updated : e)));
+      syncEventUpsert(updated);
       showToast(`'${data.title}' 일정이 수정되었습니다.`);
     } else {
       // Create new
@@ -381,6 +437,7 @@ export default function App() {
         id: `ev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       } as ChurchEvent;
       setEvents((prev) => [...prev, newEvent]);
+      syncEventUpsert(newEvent);
       showToast(`'${data.title}' 새 일정이 등록되었습니다.`);
     }
 
@@ -402,6 +459,7 @@ export default function App() {
       location: tmpl.location || undefined,
     };
     setEvents((prev) => [...prev, newEvent]);
+    syncEventUpsert(newEvent);
     setSelectedDate(date);
     showToast(`'${tmpl.title}' 일정이 등록되었습니다.`);
   };
@@ -409,6 +467,7 @@ export default function App() {
   const handleDeleteEvent = (id: string) => {
     const target = events.find((e) => e.id === id);
     setEvents((prev) => prev.filter((e) => e.id !== id));
+    syncEventDelete(id);
     if (editingEvent?.id === id) {
       setEditingEvent(null);
       setIsEventFormOpen(false);
@@ -423,6 +482,7 @@ export default function App() {
     }));
 
     setEvents((prev) => [...prev, ...created]);
+    created.forEach(syncEventUpsert);
     showToast(`${created.length}개의 일정이 AI를 통해 캘린더에 추가되었습니다.`);
 
     if (created.length > 0) {
@@ -464,6 +524,7 @@ export default function App() {
           id: `ev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         })) as ChurchEvent[];
         setEvents((prev) => [...prev, ...withIds]);
+        withIds.forEach(syncEventUpsert);
         showToast(`CSV에서 ${withIds.length}개 일정을 추가했습니다.`);
       } catch (err) {
         console.error('CSV 가져오기 실패:', err);
@@ -477,6 +538,11 @@ export default function App() {
 
   const handleResetSeed = () => {
     setEvents(INITIAL_EVENTS);
+    if (accountUidRef.current) {
+      replaceAllEvents(accountUidRef.current, INITIAL_EVENTS).catch((e) =>
+        console.error('초기화 클라우드 반영 실패:', e)
+      );
+    }
     setYear(2026);
     setMonth(9);
     setSelectedDate('2026-10-18');
@@ -773,6 +839,11 @@ export default function App() {
         events={events}
         onImportEvents={(imported) => {
           setEvents(imported);
+          if (accountUidRef.current) {
+            replaceAllEvents(accountUidRef.current, imported).catch((e) =>
+              console.error('복원 클라우드 반영 실패:', e)
+            );
+          }
           showToast(`${imported.length}개의 일정이 복원되었습니다.`);
         }}
         onResetSeed={handleResetSeed}
