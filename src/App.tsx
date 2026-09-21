@@ -252,10 +252,13 @@ export default function App() {
   };
 
   // Calendar Navigation State
-  // Default to 2026 October where the rich seed events reside
-  const [year, setYear] = useState<number>(2026);
-  const [month, setMonth] = useState<number>(9); // 0-indexed: 9 = October
-  const [selectedDate, setSelectedDate] = useState<string | null>('2026-10-18');
+  // 오늘 날짜로 시작합니다.
+  const today = new Date();
+  const [year, setYear] = useState<number>(today.getFullYear());
+  const [month, setMonth] = useState<number>(today.getMonth()); // 0-indexed
+  const [selectedDate, setSelectedDate] = useState<string | null>(
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  );
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedCategory, setSelectedCategory] = useState<EventCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
