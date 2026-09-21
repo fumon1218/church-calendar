@@ -299,9 +299,9 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({ isOpen, onCl
             <div className="space-y-2.5">
               {verses.map((v) => (
                 <div key={v.verse}>
-                  <p className="text-sm text-[var(--ink)] leading-relaxed">
+                  <p className="text-sm text-[var(--ink)] leading-relaxed whitespace-pre-line">
                     <span className="text-[10px] font-bold text-[var(--primary)] align-super mr-1">{v.verse}</span>
-                    {v.text}
+                    <span dangerouslySetInnerHTML={{ __html: v.text }} />
                   </p>
                   {showCommentary && (
                     <div className="mt-1 mb-2 ml-1 p-2.5 rounded-xl bg-amber-500/8 border border-amber-500/20 text-[11px] text-[var(--ink-soft)] leading-relaxed whitespace-pre-line">
