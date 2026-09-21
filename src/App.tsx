@@ -158,15 +158,15 @@ export default function App() {
   const lastLocalUpdateAtRef = React.useRef<number>(
     Number(localStorage.getItem(STORAGE_LAST_LOCAL_UPDATE_KEY)) || 0
   );
-  const markLocalUpdateNow = () => {
-    const now = Date.now();
-    lastLocalUpdateAtRef.current = now;
+  // 서버(DB)가 확인해준 저장 시각을 "이 기기의 최신 기준"으로 기록해둡니다.
+  // (기기 자체 시계가 아니라 항상 서버 시각을 기준으로 삼아, 기기 간 시계 오차 문제를 없앱니다)
+  const applyLocalTimestamp = (ts: number) => {
+    lastLocalUpdateAtRef.current = ts;
     try {
-      localStorage.setItem(STORAGE_LAST_LOCAL_UPDATE_KEY, String(now));
+      localStorage.setItem(STORAGE_LAST_LOCAL_UPDATE_KEY, String(ts));
     } catch {
       // ignore
     }
-    return now;
   };
 
   useEffect(() => {
@@ -193,7 +193,9 @@ export default function App() {
               saveUserDoc(user.uid, {
                 events: latestEventsRef.current,
                 churchConfig: latestChurchConfigRef.current,
-              }).catch((e) => console.error('클라우드 재동기화 실패:', e));
+              })
+                .then(applyLocalTimestamp)
+                .catch((e) => console.error('클라우드 재동기화 실패:', e));
               return;
             }
             applyingRemoteRef.current = true;
@@ -211,11 +213,12 @@ export default function App() {
           } else {
             // 이 계정으로는 처음 로그인 → "지금 이 순간" 갖고 있는 최신 로컬 데이터를
             // 클라우드의 시작값으로 저장합니다. (오래된 값이 아니라 항상 최신 값을 씁니다)
-            markLocalUpdateNow();
             saveUserDoc(user.uid, {
               events: latestEventsRef.current,
               churchConfig: latestChurchConfigRef.current,
-            }).catch((e) => console.error('클라우드 초기 저장 실패:', e));
+            })
+              .then(applyLocalTimestamp)
+              .catch((e) => console.error('클라우드 초기 저장 실패:', e));
           }
         });
       } else {
@@ -234,10 +237,9 @@ export default function App() {
   // 로그인 상태에서 일정/설정이 바뀌면 클라우드에도 저장 (다른 기기와 동기화)
   useEffect(() => {
     if (!accountUidRef.current || applyingRemoteRef.current) return;
-    markLocalUpdateNow();
-    saveUserDoc(accountUidRef.current, { events, churchConfig }).catch((e) =>
-      console.error('클라우드 자동 저장 실패:', e)
-    );
+    saveUserDoc(accountUidRef.current, { events, churchConfig })
+      .then(applyLocalTimestamp)
+      .catch((e) => console.error('클라우드 자동 저장 실패:', e));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, churchConfig, accountEmail]);
 
@@ -245,12 +247,12 @@ export default function App() {
   // (다른 기기/예전 로그인 때문에 클라우드에 이상한 데이터가 들어간 경우, 확실한 쪽 기기에서 눌러 바로잡는 용도)
   const handleForcePushToCloud = () => {
     if (!accountUidRef.current) return;
-    markLocalUpdateNow();
     saveUserDoc(accountUidRef.current, {
       events: latestEventsRef.current,
       churchConfig: latestChurchConfigRef.current,
     })
-      .then(() => {
+      .then((ts) => {
+        applyLocalTimestamp(ts);
         showToast('이 기기의 데이터를 클라우드에 저장했습니다.');
       })
       .catch((e: any) => {
