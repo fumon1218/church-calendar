@@ -12,8 +12,12 @@ export interface BookData {
 
 const cache: Record<string, BookData> = {};
 
-function stripHtml(html: string): string {
-  return html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '');
+function sanitizeVerseHtml(html: string): string {
+  // <br>는 줄바꿈으로 바꾸고, 일본어/국한문 성경의 발음 표기에 쓰이는
+  // <ruby>/<rt>/<rb> 태그는 남겨서 실제로 위에 작게 표시되게 하고, 그 외 태그는 모두 제거합니다.
+  let s = html.replace(/<br\s*\/?>/gi, '\n');
+  s = s.replace(/<(?!\/?(ruby|rt|rb)\b)[^>]*>/gi, '');
+  return s;
 }
 
 /* ================= IndexedDB (사용자가 업로드한 파일 저장소) ================= */
@@ -185,5 +189,5 @@ export function getChapterVerses(book: BookData, chapter: number): VerseItem[] {
   return Object.keys(ch.verse)
     .map(Number)
     .sort((a, b) => a - b)
-    .map((v) => ({ verse: v, text: stripHtml(ch.verse[String(v)].text) }));
+    .map((v) => ({ verse: v, text: sanitizeVerseHtml(ch.verse[String(v)].text) }));
 }
