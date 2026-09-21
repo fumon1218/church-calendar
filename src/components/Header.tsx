@@ -201,8 +201,8 @@ export const Header: React.FC<HeaderProps> = ({
               <ChevronLeft className="w-4 h-4" />
             </button>
 
-            <div className="flex items-baseline px-2 gap-1.5 min-w-[130px] justify-center">
-              <span className="font-serif text-2xl sm:text-3xl font-bold text-[var(--ink)]">
+            <div className="flex items-baseline px-2 gap-1.5 min-w-[130px] justify-center flex-nowrap">
+              <span className="font-serif text-2xl sm:text-3xl font-bold text-[var(--ink)] whitespace-nowrap flex-shrink-0">
                 {month + 1}월
               </span>
               {isEditingYear ? (
@@ -224,7 +224,7 @@ export const Header: React.FC<HeaderProps> = ({
                     setYearInputValue(String(year));
                     setIsEditingYear(true);
                   }}
-                  className="font-serif text-base text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline cursor-pointer"
+                  className="font-serif text-base text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline cursor-pointer whitespace-nowrap flex-shrink-0"
                   title="클릭하여 연도 직접 변경"
                 >
                   {year}년
