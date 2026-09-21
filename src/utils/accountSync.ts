@@ -142,7 +142,7 @@ export async function saveUserDoc(uid: string, data: SyncedData): Promise<number
     .from('user_data')
     .upsert({
       user_id: uid,
-      events: cleaned.events ?? [],
+      events: [], // 일정은 이제 events 테이블에 개별로 저장합니다 - 이 칸은 더 안 씁니다.
       church_config: cleaned.churchConfig ?? {},
     })
     .select('updated_at')
@@ -152,4 +152,110 @@ export async function saveUserDoc(uid: string, data: SyncedData): Promise<number
     throw error;
   }
   return row?.updated_at ?? Date.now();
+}
+
+/* ================= 일정 개별 동기화 (events 테이블) =================
+ * 예전에는 일정 목록 전체를 하나의 통짜 데이터로 저장했는데, 이러면 한쪽 기기가 저장하는 사이에
+ * 다른 기기가 (아직 최신 내용을 못 받은 채로) 저장하면 서로 덮어써버리는 사고가 날 수 있었습니다.
+ * 이제는 일정 하나하나를 각각 별도의 행(row)으로 저장해서, 서로 다른 일정끼리는 절대 충돌하지 않습니다.
+ */
+
+export async function fetchAllEvents(uid: string): Promise<any[]> {
+  const c = getClient();
+  if (!c) return [];
+  const { data, error } = await c.from('events').select('id, data').eq('user_id', uid);
+  if (error) {
+    console.error('일정 전체 불러오기 실패:', error);
+    return [];
+  }
+  return (data || []).map((row: any) => row.data);
+}
+
+export async function upsertEvent(uid: string, event: any): Promise<void> {
+  const c = getClient();
+  if (!c) return;
+  const cleaned = JSON.parse(JSON.stringify(event));
+  const { error } = await c.from('events').upsert({
+    id: cleaned.id,
+    user_id: uid,
+    data: cleaned,
+  });
+  if (error) {
+    console.error('일정 저장 실패:', error);
+    throw error;
+  }
+}
+
+export async function deleteEventRemote(uid: string, eventId: string): Promise<void> {
+  const c = getClient();
+  if (!c) return;
+  const { error } = await c.from('events').delete().eq('user_id', uid).eq('id', eventId);
+  if (error) {
+    console.error('일정 삭제 실패:', error);
+    throw error;
+  }
+}
+
+// 기존 일정을 전부 지우고 새 목록으로 통째로 교체합니다.
+// (백업 복원, 초기 예시 데이터로 되돌리기, "이 기기 데이터로 클라우드 덮어쓰기" 같은
+//  "의도적으로 전체를 바꾸는" 상황에서만 씁니다 - 평소 추가/수정/삭제에는 안 씁니다)
+export async function replaceAllEvents(uid: string, events: any[]): Promise<void> {
+  const c = getClient();
+  if (!c) return;
+  const { error: delError } = await c.from('events').delete().eq('user_id', uid);
+  if (delError) {
+    console.error('일정 전체 교체(삭제 단계) 실패:', delError);
+    throw delError;
+  }
+  if (events.length === 0) return;
+  const rows = events.map((ev) => ({
+    id: ev.id,
+    user_id: uid,
+    data: JSON.parse(JSON.stringify(ev)),
+  }));
+  const { error: insError } = await c.from('events').insert(rows);
+  if (insError) {
+    console.error('일정 전체 교체(삽입 단계) 실패:', insError);
+    throw insError;
+  }
+}
+
+// 다른 기기가 일정을 추가/수정/삭제하면 실시간으로 알려줍니다.
+// (전체를 다시 받는 게 아니라, 바뀐 그 일정 하나만 알려주므로 다른 일정과 절대 충돌하지 않습니다)
+export function watchEvents(
+  uid: string,
+  onChange: (event: any) => void,
+  onDelete: (eventId: string) => void
+) {
+  const c = getClient();
+  if (!c) return () => {};
+
+  const channel = c
+    .channel(`events_${uid}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'events', filter: `user_id=eq.${uid}` },
+      (payload: any) => {
+        if (payload.new?.data) onChange(payload.new.data);
+      }
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'events', filter: `user_id=eq.${uid}` },
+      (payload: any) => {
+        if (payload.new?.data) onChange(payload.new.data);
+      }
+    )
+    .on(
+      'postgres_changes',
+      { event: 'DELETE', schema: 'public', table: 'events', filter: `user_id=eq.${uid}` },
+      (payload: any) => {
+        if (payload.old?.id) onDelete(payload.old.id);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    c.removeChannel(channel);
+  };
 }
