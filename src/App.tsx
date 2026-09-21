@@ -28,7 +28,8 @@ import { generateICS, downloadFile, getTodayStr } from './utils/calendar';
 import { fetchHolidaysAround, HolidayMap } from './utils/holidays';
 import { fetchWeather, WeatherMap } from './utils/weather';
 import { TodaysVerseBanner } from './components/TodaysVerseBanner';
-import { CheckCircle2, Sparkles, CalendarDays } from 'lucide-react';
+import { CheckCircle2, Sparkles, CalendarDays, Download, Upload } from 'lucide-react';
+import { exportEventsToCsv, parseEventsFromCsv } from './utils/csvBackup';
 
 const STORAGE_EVENTS_KEY = 'church-calendar-events-v1';
 const STORAGE_CONFIG_KEY = 'church-calendar-config-v1';
@@ -439,6 +440,41 @@ export default function App() {
     showToast('iCalendar (.ics) 파일이 다운로드되었습니다.');
   };
 
+  const handleExportCsv = () => {
+    const csv = exportEventsToCsv(events);
+    const today = new Date().toISOString().slice(0, 10);
+    downloadFile(`${churchConfig.churchName}_일정_${today}.csv`, csv, 'text/csv;charset=utf-8');
+    showToast(`CSV 파일(${events.length}개 일정)이 다운로드되었습니다.`);
+  };
+
+  const handleImportCsv = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result || '');
+        const parsed = parseEventsFromCsv(text);
+        if (parsed.length === 0) {
+          showToast('CSV에서 읽을 수 있는 일정이 없습니다. (date, title 칸이 꼭 있어야 합니다)');
+          return;
+        }
+        const withIds: ChurchEvent[] = parsed.map((p) => ({
+          ...p,
+          id: `ev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        })) as ChurchEvent[];
+        setEvents((prev) => [...prev, ...withIds]);
+        showToast(`CSV에서 ${withIds.length}개 일정을 추가했습니다.`);
+      } catch (err) {
+        console.error('CSV 가져오기 실패:', err);
+        showToast('CSV 파일을 읽는 중 오류가 발생했습니다.');
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+    // 같은 파일을 다시 선택해도 인식되도록 값 초기화
+    e.target.value = '';
+  };
+
   const handleResetSeed = () => {
     setEvents(INITIAL_EVENTS);
     setYear(2026);
@@ -591,42 +627,63 @@ export default function App() {
           )}
         </main>
 
-        {/* External App Links */}
-        <div className="no-print flex flex-wrap items-center justify-center gap-2 mt-8">
-          <a
-            href="https://fumon1218.github.io/bible-memory-app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] transition-colors shadow-xs"
-            title="암송수첩 (새 탭에서 열림)"
-          >
-            <img
-              src={`${import.meta.env.BASE_URL}logo.svg`}
-              alt=""
-              className="w-4 h-4 rounded-full object-cover flex-shrink-0"
-            />
-            <span>암송수첩</span>
-          </a>
-          <a
-            href="https://fumon1218.github.io/global-bible-pro/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] transition-colors shadow-xs"
-            title="성경 (새 탭에서 열림)"
-          >
-            <span className="text-sm flex-shrink-0">📖</span>
-            <span>성경</span>
-          </a>
-          <a
-            href="https://fumon1218.github.io/verse-game/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] transition-colors shadow-xs"
-            title="말씀암송게임 (새 탭에서 열림)"
-          >
-            <span className="text-sm flex-shrink-0">🧠</span>
-            <span>말씀암송게임</span>
-          </a>
+        {/* External App Links & CSV 백업 */}
+        <div className="no-print flex flex-wrap items-center justify-between gap-3 mt-8">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCsv}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-full bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] transition-colors shadow-xs"
+              title="지금 일정을 CSV 파일로 다운로드합니다"
+            >
+              <Download className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>CSV 내보내기</span>
+            </button>
+            <label
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-full bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] transition-colors shadow-xs cursor-pointer"
+              title="CSV 파일을 읽어서 일정으로 추가합니다"
+            >
+              <Upload className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>CSV 가져오기</span>
+              <input type="file" accept=".csv,text/csv" onChange={handleImportCsv} className="hidden" />
+            </label>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <a
+              href="https://fumon1218.github.io/bible-memory-app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] transition-colors shadow-xs"
+              title="암송수첩 (새 탭에서 열림)"
+            >
+              <img
+                src={`${import.meta.env.BASE_URL}logo.svg`}
+                alt=""
+                className="w-4 h-4 rounded-full object-cover flex-shrink-0"
+              />
+              <span>암송수첩</span>
+            </a>
+            <a
+              href="https://fumon1218.github.io/global-bible-pro/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] transition-colors shadow-xs"
+              title="성경 (새 탭에서 열림)"
+            >
+              <span className="text-sm flex-shrink-0">📖</span>
+              <span>성경</span>
+            </a>
+            <a
+              href="https://fumon1218.github.io/verse-game/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] transition-colors shadow-xs"
+              title="말씀암송게임 (새 탭에서 열림)"
+            >
+              <span className="text-sm flex-shrink-0">🧠</span>
+              <span>말씀암송게임</span>
+            </a>
+          </div>
         </div>
 
         {/* Footer */}
@@ -736,6 +793,7 @@ export default function App() {
         onClose={() => setIsAccountOpen(false)}
         currentEmail={accountEmail}
         onForcePush={handleForcePushToCloud}
+        localEventCount={events.length}
       />
     </div>
   );
