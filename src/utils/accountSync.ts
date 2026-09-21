@@ -32,6 +32,14 @@ export function initSync() {
     app = window.firebase.initializeApp(FIREBASE_CONFIG);
     authApi = window.firebase.auth();
     dbApi = window.firebase.firestore();
+    // Firestore는 필드 값이 undefined(값 없음)인 걸 저장하지 못하고 오류를 냅니다.
+    // 일정의 시간/장소/설교자 같은 선택 항목이 비어있으면 undefined가 될 수 있어서,
+    // 이런 값은 그냥 무시하고 저장하도록 설정합니다.
+    try {
+      dbApi.settings({ ignoreUndefinedProperties: true });
+    } catch {
+      // 이미 다른 설정이 적용된 이후라면(재실행 등) 무시합니다.
+    }
   }
   return { authApi, dbApi };
 }
@@ -63,8 +71,7 @@ export function watchUserDoc(uid: string, onData: (data: SyncedData | null) => v
 
 export function saveUserDoc(uid: string, data: SyncedData) {
   if (!dbApi) return Promise.resolve();
-  return dbApi
-    .collection('users')
-    .doc(uid)
-    .set({ ...data, updatedAt: Date.now() }, { merge: true });
+  // 위 설정과 별개로 한 번 더 안전하게: JSON으로 한 번 돌려서 undefined 값들을 확실히 제거합니다.
+  const cleaned = JSON.parse(JSON.stringify({ ...data, updatedAt: Date.now() }));
+  return dbApi.collection('users').doc(uid).set(cleaned, { merge: true });
 }
