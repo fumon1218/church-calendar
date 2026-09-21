@@ -9,6 +9,7 @@ export interface PraiseRowItem {
   praiseSong: string; // e.g. "은혜찬송가 52장"
   praiseSubtitle: string; // e.g. "(망망한 인생의 거친 바다에)"
   startHymn: string; // e.g. "은찬 69, 91"
+  eventId?: string; // 달력에 이미 저장된 일정이면 그 일정의 id (다시 등록할 때 중복 생성 대신 수정하기 위함)
 }
 
 interface PraiseTableModalProps {
@@ -16,14 +17,46 @@ interface PraiseTableModalProps {
   onClose: () => void;
   year: number;
   month: number; // 0-indexed (8 = 9월)
+  events: ChurchEvent[]; // 달력에 저장된 전체 일정 (해당 월의 찬양 일정을 표로 만드는 데 사용)
   onApplyEvents: (events: Partial<ChurchEvent>[]) => void;
 }
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+// 달력에 저장된 해당 월의 찬양대 일정을 날짜순으로 표 행으로 변환합니다.
+// ('주일 찬양 연습', '찬양의 밤'처럼 찬양곡 정보가 없는 일정은 제외)
+const buildRowsFromEvents = (events: ChurchEvent[], year: number, month: number): PraiseRowItem[] => {
+  const prefix = `${year}-${pad2(month + 1)}-`;
+  return events
+    .filter(
+      (e) =>
+        e.category === 'praise' &&
+        e.date.startsWith(prefix) &&
+        (e.praiseSong || e.startHymn || /^찬양대\s*-/.test(e.title))
+    )
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''))
+    .map((e) => {
+      const day = Number(e.date.slice(8, 10));
+      const song = (e.praiseSong || e.title.replace(/^찬양대\s*-\s*/, '')).trim();
+      const subtitle = (e.praiseSubtitle || '').replace(/[()]/g, '').trim();
+      return {
+        id: `pr-${e.id}`,
+        eventId: e.id,
+        dateStr: `${month + 1}월 ${day}일`,
+        fullDate: e.date,
+        praiseSong: song,
+        praiseSubtitle: subtitle ? `(${subtitle})` : '',
+        startHymn: e.startHymn || '',
+      };
+    });
+};
 
 export const PraiseTableModal: React.FC<PraiseTableModalProps> = ({
   isOpen,
   onClose,
   year,
   month,
+  events,
   onApplyEvents,
 }) => {
   if (!isOpen) return null;
@@ -66,8 +99,14 @@ export const PraiseTableModal: React.FC<PraiseTableModalProps> = ({
     },
   ];
 
+  // 달력에 저장된 그 달의 찬양 일정이 있으면 그것을 표로 보여주고,
+  // 하나도 없을 때만 기본값(9월 예시 / 빈 예시 행)을 보여줍니다.
+  const calendarItems = buildRowsFromEvents(events, year, month);
+
   const [items, setItems] = useState<PraiseRowItem[]>(
-    currentMonthNum === 9 ? default9MonthItems : [
+    calendarItems.length > 0
+      ? calendarItems
+      : currentMonthNum === 9 ? default9MonthItems : [
       {
         id: 'pr-101',
         dateStr: `${currentMonthNum}월 4일`,
@@ -111,6 +150,17 @@ export const PraiseTableModal: React.FC<PraiseTableModalProps> = ({
   const handleApplyToCalendar = () => {
     const newEvents: Partial<ChurchEvent>[] = items.map((item) => {
       const cleanSubtitle = item.praiseSubtitle.replace(/[()]/g, '').trim();
+      if (item.eventId) {
+        return {
+          id: item.eventId,
+          date: item.fullDate,
+          category: 'praise',
+          title: `찬양대 - ${item.praiseSong}`,
+          praiseSong: item.praiseSong,
+          praiseSubtitle: cleanSubtitle,
+          startHymn: item.startHymn,
+        };
+      }
       return {
         date: item.fullDate,
         category: 'praise',
