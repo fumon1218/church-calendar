@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
-import { X, Cloud, Loader2 } from 'lucide-react';
+import { X, Cloud, Loader2, UploadCloud } from 'lucide-react';
 import { getAuth, SYNC_ENABLED } from '../utils/accountSync';
 
 interface AccountModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentEmail: string | null;
+  onForcePush?: () => void;
 }
 
-export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, currentEmail }) => {
+export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, currentEmail, onForcePush }) => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pushConfirming, setPushConfirming] = useState(false);
+  const [pushed, setPushed] = useState(false);
 
   if (!isOpen) return null;
 
@@ -107,6 +110,51 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, cur
               >
                 로그아웃
               </button>
+
+              {onForcePush && (
+                <div className="pt-2 border-t border-[var(--line-soft)]">
+                  {!pushConfirming ? (
+                    <button
+                      onClick={() => setPushConfirming(true)}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold rounded-xl border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                    >
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      이 기기 데이터로 클라우드 덮어쓰기
+                    </button>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed bg-amber-500/10 border border-amber-500/30 rounded-lg p-2">
+                        ⚠️ 다른 기기에 있는 데이터는 무시되고, <b>지금 이 기기의 데이터로 완전히 바뀝니다.</b>
+                        클라우드에 잘못된(예전) 데이터가 남아있을 때만 사용하세요.
+                      </p>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => setPushConfirming(false)}
+                          className="flex-1 py-1.5 text-[11px] rounded-lg border border-[var(--line)] text-[var(--ink-soft)]"
+                        >
+                          취소
+                        </button>
+                        <button
+                          onClick={() => {
+                            onForcePush();
+                            setPushConfirming(false);
+                            setPushed(true);
+                            setTimeout(() => setPushed(false), 2000);
+                          }}
+                          className="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-amber-600 text-white"
+                        >
+                          확인, 덮어쓰기
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {pushed && (
+                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1.5 text-center">
+                      ✓ 클라우드에 저장했습니다.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-2.5">
