@@ -160,15 +160,40 @@ export async function saveUserDoc(uid: string, data: SyncedData): Promise<number
  * 이제는 일정 하나하나를 각각 별도의 행(row)으로 저장해서, 서로 다른 일정끼리는 절대 충돌하지 않습니다.
  */
 
-export async function fetchAllEvents(uid: string): Promise<any[]> {
+// 삭제 표시(묘비) 방식 안내
+// 일정을 지울 때 행을 진짜로 지우면 "지웠다"는 기록이 어디에도 남지 않아서, 옛 일정이 남아 있는
+// 다른 기기(또는 브라우저 저장소)가 로그인할 때 "클라우드에 없는 내 일정"으로 착각하고 다시 올려버립니다.
+// 그래서 삭제는 행을 없애지 않고 data 안에 '__deleted' 표시를 남기는 방식으로 합니다.
+// (테이블 구조는 바꿀 필요가 없습니다)
+const TOMBSTONE_KEY = '__deleted';
+
+function makeTombstone(uid: string, eventId: string) {
+  return {
+    id: eventId,
+    user_id: uid,
+    data: { id: eventId, [TOMBSTONE_KEY]: true, deletedAt: Date.now() },
+  };
+}
+
+// 실패하면 빈 목록을 돌려주지 않고 오류를 던집니다.
+// (빈 목록으로 착각하면 "클라우드가 비었네" 하고 이 기기의 일정을 전부 다시 올려버리기 때문입니다)
+export async function fetchAllEvents(
+  uid: string
+): Promise<{ events: any[]; deletedIds: string[] }> {
   const c = getClient();
-  if (!c) return [];
+  if (!c) return { events: [], deletedIds: [] };
   const { data, error } = await c.from('events').select('id, data').eq('user_id', uid);
   if (error) {
     console.error('일정 전체 불러오기 실패:', error);
-    return [];
+    throw error;
   }
-  return (data || []).map((row: any) => row.data);
+  const events: any[] = [];
+  const deletedIds: string[] = [];
+  (data || []).forEach((row: any) => {
+    if (row.data?.[TOMBSTONE_KEY]) deletedIds.push(row.id);
+    else if (row.data) events.push(row.data);
+  });
+  return { events, deletedIds };
 }
 
 export async function upsertEvent(uid: string, event: any): Promise<void> {
@@ -186,37 +211,48 @@ export async function upsertEvent(uid: string, event: any): Promise<void> {
   }
 }
 
+// 일정 삭제: 행을 지우지 않고 '삭제됨' 표시로 바꿉니다. (다른 기기에도 실시간으로 전달됩니다)
 export async function deleteEventRemote(uid: string, eventId: string): Promise<void> {
   const c = getClient();
   if (!c) return;
-  const { error } = await c.from('events').delete().eq('user_id', uid).eq('id', eventId);
+  const { error } = await c.from('events').upsert(makeTombstone(uid, eventId));
   if (error) {
     console.error('일정 삭제 실패:', error);
     throw error;
   }
 }
 
-// 기존 일정을 전부 지우고 새 목록으로 통째로 교체합니다.
+// 기존 일정을 새 목록으로 통째로 교체합니다. 새 목록에 없는 기존 일정은 '삭제됨' 표시로 바꿉니다.
 // (백업 복원, 초기 예시 데이터로 되돌리기, "이 기기 데이터로 클라우드 덮어쓰기" 같은
 //  "의도적으로 전체를 바꾸는" 상황에서만 씁니다 - 평소 추가/수정/삭제에는 안 씁니다)
 export async function replaceAllEvents(uid: string, events: any[]): Promise<void> {
   const c = getClient();
   if (!c) return;
-  const { error: delError } = await c.from('events').delete().eq('user_id', uid);
-  if (delError) {
-    console.error('일정 전체 교체(삭제 단계) 실패:', delError);
-    throw delError;
+  const { data: existing, error: fetchError } = await c
+    .from('events')
+    .select('id, data')
+    .eq('user_id', uid);
+  if (fetchError) {
+    console.error('일정 전체 교체(조회 단계) 실패:', fetchError);
+    throw fetchError;
   }
-  if (events.length === 0) return;
-  const rows = events.map((ev) => ({
+  // 같은 id가 두 번 들어가면 한 번의 upsert에서 오류가 나므로 id 기준으로 하나만 남깁니다.
+  const byId = new Map<string, any>();
+  events.forEach((ev) => byId.set(ev.id, ev));
+  const rows = Array.from(byId.values()).map((ev) => ({
     id: ev.id,
     user_id: uid,
     data: JSON.parse(JSON.stringify(ev)),
   }));
-  const { error: insError } = await c.from('events').insert(rows);
-  if (insError) {
-    console.error('일정 전체 교체(삽입 단계) 실패:', insError);
-    throw insError;
+  const tombstones = (existing || [])
+    .filter((r: any) => !byId.has(r.id) && !r.data?.[TOMBSTONE_KEY])
+    .map((r: any) => makeTombstone(uid, r.id));
+  const all = [...tombstones, ...rows];
+  if (all.length === 0) return;
+  const { error } = await c.from('events').upsert(all);
+  if (error) {
+    console.error('일정 전체 교체 실패:', error);
+    throw error;
   }
 }
 
@@ -230,27 +266,33 @@ export function watchEvents(
   const c = getClient();
   if (!c) return () => {};
 
+  const handleUpsert = (payload: any) => {
+    const row = payload.new;
+    if (!row?.data) return;
+    if (row.data[TOMBSTONE_KEY]) onDelete(row.id);
+    else onChange(row.data);
+  };
+
   const channel = c
     .channel(`events_${uid}`)
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'events', filter: `user_id=eq.${uid}` },
-      (payload: any) => {
-        if (payload.new?.data) onChange(payload.new.data);
-      }
+      handleUpsert
     )
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'events', filter: `user_id=eq.${uid}` },
-      (payload: any) => {
-        if (payload.new?.data) onChange(payload.new.data);
-      }
+      handleUpsert
     )
+    // 대시보드에서 직접 행을 지운 경우를 위한 것입니다. DELETE 이벤트에는 filter를 걸 수 없어서
+    // (Supabase Realtime 제약) 필터 없이 받고 여기서 내 것인지 걸러냅니다.
     .on(
       'postgres_changes',
-      { event: 'DELETE', schema: 'public', table: 'events', filter: `user_id=eq.${uid}` },
+      { event: 'DELETE', schema: 'public', table: 'events' },
       (payload: any) => {
-        if (payload.old?.id) onDelete(payload.old.id);
+        const old = payload.old;
+        if (old?.id && (!old.user_id || old.user_id === uid)) onDelete(old.id);
       }
     )
     .subscribe();
