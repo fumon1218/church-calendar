@@ -37,6 +37,7 @@ export const DayDetailPanel: React.FC<DayDetailPanelProps> = ({
   const [memo, setMemo] = useState('');
   const [location, setLocation] = useState('');
   const [lat, setLat] = useState<number | undefined>(undefined);
+  const [showMemoryApp, setShowMemoryApp] = useState(false);
   const [lng, setLng] = useState<number | undefined>(undefined);
 
   const dayEvents = selectedDate
@@ -586,6 +587,43 @@ export const DayDetailPanel: React.FC<DayDetailPanelProps> = ({
           />
         </div>
       )}
+
+      {/* 암송수첩 미리보기 (사이드바에 바로 내장) */}
+      <div className="border-t border-[var(--line-soft)]">
+        <button
+          onClick={() => setShowMemoryApp((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] transition-colors"
+        >
+          <span className="flex items-center gap-1.5">
+            <img
+              src={`${import.meta.env.BASE_URL}logo.svg`}
+              alt=""
+              className="w-4 h-4 rounded-full object-cover"
+            />
+            암송수첩
+          </span>
+          <span className="text-[var(--ink-faint)]">{showMemoryApp ? '숨기기 ▲' : '보기 ▼'}</span>
+        </button>
+        {showMemoryApp && (
+          <div className="px-3 pb-3">
+            <iframe
+              src="https://fumon1218.github.io/bible-memory-app/"
+              title="암송수첩"
+              className="w-full rounded-xl border border-[var(--line)]"
+              style={{ height: 480 }}
+              loading="lazy"
+            />
+            <a
+              href="https://fumon1218.github.io/bible-memory-app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-center mt-1.5 text-[10px] text-[var(--ink-faint)] hover:text-[var(--primary)] hover:underline"
+            >
+              새 탭에서 크게 열기 ↗
+            </a>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
