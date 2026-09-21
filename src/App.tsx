@@ -193,7 +193,7 @@ export default function App() {
               saveUserDoc(user.uid, {
                 events: latestEventsRef.current,
                 churchConfig: latestChurchConfigRef.current,
-              });
+              }).catch((e) => console.error('클라우드 재동기화 실패:', e));
               return;
             }
             applyingRemoteRef.current = true;
@@ -215,7 +215,7 @@ export default function App() {
             saveUserDoc(user.uid, {
               events: latestEventsRef.current,
               churchConfig: latestChurchConfigRef.current,
-            });
+            }).catch((e) => console.error('클라우드 초기 저장 실패:', e));
           }
         });
       } else {
@@ -235,7 +235,9 @@ export default function App() {
   useEffect(() => {
     if (!accountUidRef.current || applyingRemoteRef.current) return;
     markLocalUpdateNow();
-    saveUserDoc(accountUidRef.current, { events, churchConfig });
+    saveUserDoc(accountUidRef.current, { events, churchConfig }).catch((e) =>
+      console.error('클라우드 자동 저장 실패:', e)
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, churchConfig, accountEmail]);
 
@@ -247,8 +249,14 @@ export default function App() {
     saveUserDoc(accountUidRef.current, {
       events: latestEventsRef.current,
       churchConfig: latestChurchConfigRef.current,
-    });
-    showToast('이 기기의 데이터를 클라우드에 저장했습니다.');
+    })
+      .then(() => {
+        showToast('이 기기의 데이터를 클라우드에 저장했습니다.');
+      })
+      .catch((e: any) => {
+        console.error('클라우드 덮어쓰기 실패:', e);
+        showToast('클라우드 저장에 실패했습니다. 콘솔을 확인해주세요.');
+      });
   };
 
   // Calendar Navigation State
