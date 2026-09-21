@@ -132,21 +132,24 @@ export function watchUserDoc(uid: string, onData: (data: SyncedData | null) => v
   };
 }
 
-export async function saveUserDoc(uid: string, data: SyncedData) {
+export async function saveUserDoc(uid: string, data: SyncedData): Promise<number> {
   const c = getClient();
-  if (!c) return;
+  if (!c) return Date.now();
   const cleaned = JSON.parse(JSON.stringify(data));
-  const updatedAt = Date.now();
-  // 반드시 await로 실제 요청이 나가는 걸 보장합니다.
-  // (그냥 호출만 하고 기다리지 않으면 요청 자체가 안 나갈 수 있습니다)
-  const { error } = await c.from('user_data').upsert({
-    user_id: uid,
-    events: cleaned.events ?? [],
-    church_config: cleaned.churchConfig ?? {},
-    updated_at: updatedAt,
-  });
+  // updated_at은 클라이언트가 보내지 않습니다 - 서버(DB)의 트리거가 자동으로 채웁니다.
+  // (기기마다 시계가 조금씩 다를 수 있어서, "누가 더 최신인지"는 항상 서버 시각 기준으로 판단합니다)
+  const { data: row, error } = await c
+    .from('user_data')
+    .upsert({
+      user_id: uid,
+      events: cleaned.events ?? [],
+      church_config: cleaned.churchConfig ?? {},
+    })
+    .select('updated_at')
+    .single();
   if (error) {
     console.error('클라우드 저장 실패:', error);
     throw error;
   }
+  return row?.updated_at ?? Date.now();
 }
