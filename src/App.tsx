@@ -536,6 +536,35 @@ export default function App() {
     }
   };
 
+  // 찬양곡 표 → 달력 등록: 이미 달력에 있는 일정(id 있음)은 수정하고, 새 행만 새 일정으로 추가합니다.
+  const handleApplyPraiseTable = (items: Partial<ChurchEvent>[]) => {
+    const updated: ChurchEvent[] = [];
+    const created: ChurchEvent[] = [];
+    items.forEach((item, idx) => {
+      const existing = item.id ? events.find((e) => e.id === item.id) : undefined;
+      if (existing) {
+        updated.push({ ...existing, ...item } as ChurchEvent);
+      } else {
+        created.push({
+          ...item,
+          id: `pt-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+        } as ChurchEvent);
+      }
+    });
+
+    const updatedMap = new Map(updated.map((e) => [e.id, e]));
+    setEvents((prev) => [...prev.map((e) => updatedMap.get(e.id) ?? e), ...created]);
+    [...updated, ...created].forEach(syncEventUpsert);
+
+    const first = [...updated, ...created][0];
+    if (first) {
+      const [y, m] = first.date.split('-').map(Number);
+      setYear(y);
+      setMonth(m - 1);
+      setSelectedDate(first.date);
+    }
+  };
+
   const handleExportICS = () => {
     const icsData = generateICS(events, churchConfig.churchName);
     downloadFile(`${churchConfig.churchName}_일정표.ics`, icsData, 'text/calendar;charset=utf-8');
@@ -847,8 +876,9 @@ export default function App() {
         onClose={() => setIsPraiseTableOpen(false)}
         year={year}
         month={month}
+        events={events}
         onApplyEvents={(newPraiseEvents) => {
-          handleBulkAddEvents(newPraiseEvents);
+          handleApplyPraiseTable(newPraiseEvents);
           showToast(`${month + 1}월 찬양 표 일정이 달력에 등록되었습니다.`);
         }}
       />
