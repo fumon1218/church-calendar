@@ -617,6 +617,16 @@ export default function App() {
             <span className="text-sm flex-shrink-0">📖</span>
             <span>성경</span>
           </a>
+          <a
+            href="https://fumon1218.github.io/verse-game/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] transition-colors shadow-xs"
+            title="말씀암송게임 (새 탭에서 열림)"
+          >
+            <span className="text-sm flex-shrink-0">🧠</span>
+            <span>말씀암송게임</span>
+          </a>
         </div>
 
         {/* Footer */}
