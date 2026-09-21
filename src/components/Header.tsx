@@ -187,7 +187,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onTodayClick}
-            className="px-3.5 py-1.5 text-xs sm:text-sm font-medium border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:bg-[var(--surface-soft)] rounded-full transition-colors"
+            className="px-3.5 py-1.5 text-xs sm:text-sm font-medium border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:bg-[var(--surface-soft)] rounded-full transition-colors whitespace-nowrap flex-shrink-0"
           >
             오늘
           </button>
