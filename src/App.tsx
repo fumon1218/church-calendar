@@ -581,6 +581,34 @@ export default function App() {
           )}
         </main>
 
+        {/* External App Links */}
+        <div className="no-print flex flex-wrap items-center justify-center gap-2 mt-8">
+          <a
+            href="https://fumon1218.github.io/bible-memory-app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] transition-colors shadow-xs"
+            title="암송수첩 (새 탭에서 열림)"
+          >
+            <img
+              src={`${import.meta.env.BASE_URL}logo.svg`}
+              alt=""
+              className="w-4 h-4 rounded-full object-cover flex-shrink-0"
+            />
+            <span>암송수첩</span>
+          </a>
+          <a
+            href="https://fumon1218.github.io/global-bible-pro/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-[var(--surface-soft)] hover:bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] transition-colors shadow-xs"
+            title="성경 (새 탭에서 열림)"
+          >
+            <span className="text-sm flex-shrink-0">📖</span>
+            <span>성경</span>
+          </a>
+        </div>
+
         {/* Footer */}
         <footer className="no-print mt-12 pt-6 border-t border-[var(--line)] text-center text-xs text-[var(--ink-soft)] space-y-1">
           <p className="font-serif">
