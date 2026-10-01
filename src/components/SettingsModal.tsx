@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { ChurchConfig, ChurchEvent, RecurringTemplate, EventCategory } from '../types';
-import { X, Download, Upload, RotateCcw, Check, Save, Zap, Plus, Trash2, MapPin } from 'lucide-react';
+import { X, Download, Upload, RotateCcw, Check, Save, Zap, Plus, Trash2, MapPin, Key, Sparkles, ExternalLink } from 'lucide-react';
 import { downloadFile } from '../utils/calendar';
 import { ChurchLogo } from './ChurchLogo';
 import { CATEGORY_MAP, CATEGORIES } from '../data/categories';
 import { getStoredRecurringTemplates, saveStoredRecurringTemplates, DEFAULT_RECURRING_TEMPLATES } from '../data/recurringTemplates';
 import { AddressSearchInput } from './AddressSearchInput';
 import { isKakaoConfigured } from '../utils/kakao';
+import { getStoredGeminiApiKey, saveStoredGeminiApiKey } from '../utils/gemini';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onImportEvents,
   onResetSeed,
 }) => {
-  const [activeTab, setActiveTab] = useState<'general' | 'templates' | 'data'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'templates' | 'ai' | 'data'>('general');
   const [churchName, setChurchName] = useState(churchConfig.churchName);
   const [subTitle, setSubTitle] = useState(churchConfig.subTitle);
   const [motto, setMotto] = useState(churchConfig.motto);
@@ -35,6 +36,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [lat, setLat] = useState<number | undefined>(churchConfig.lat);
   const [lng, setLng] = useState<number | undefined>(churchConfig.lng);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [geminiKeyInput, setGeminiKeyInput] = useState(() => getStoredGeminiApiKey());
 
   // Recurring templates management state
   const [templates, setTemplates] = useState<RecurringTemplate[]>(() => getStoredRecurringTemplates());
@@ -179,6 +181,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--line)] text-[var(--ink-soft)]">
               {templates.length}
             </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('ai')}
+            className={`pb-2 px-2 font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+              activeTab === 'ai'
+                ? 'border-[var(--primary)] text-[var(--primary)] font-bold'
+                : 'border-transparent text-[var(--ink-soft)] hover:text-[var(--ink)]'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>AI 설정</span>
+            {geminiKeyInput && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            )}
           </button>
           <button
             type="button"
@@ -519,6 +536,90 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <span>동해교회 10월 기본 일정으로 초기화</span>
                   </button>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: AI Settings */}
+          {activeTab === 'ai' && (
+            <div className="space-y-4">
+              <div className="border-b border-[var(--line-soft)] pb-2">
+                <h4 className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
+                  <Key className="w-4 h-4 text-amber-500" />
+                  <span>Google Gemini API 키 설정</span>
+                </h4>
+                <p className="text-[11px] text-[var(--ink-soft)] mt-0.5 leading-relaxed">
+                  주보 사진 인식 및 공지문 텍스트 분석에 사용되는 Gemini AI 키를 등록하고 관리합니다.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-[var(--surface-soft)] border border-[var(--line)] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-xs text-[var(--ink)]">API 키 상태</span>
+                  {geminiKeyInput ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold">
+                      등록됨 (정상 작동)
+                    </span>
+                  ) : (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-bold">
+                      미등록
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-medium text-[var(--ink-soft)]">
+                    Gemini API Key
+                  </label>
+                  <input
+                    type="password"
+                    value={geminiKeyInput}
+                    onChange={(e) => setGeminiKeyInput(e.target.value)}
+                    placeholder="AIzaSy... 로 시작하는 API 키 입력"
+                    className="w-full px-3 py-2 bg-[var(--surface)] border border-[var(--line)] rounded-xl text-xs font-mono text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1 font-medium"
+                  >
+                    <span>구글 AI Studio에서 무료 키 발급</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+
+                  <div className="flex items-center gap-1.5">
+                    {geminiKeyInput && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          saveStoredGeminiApiKey('');
+                          setGeminiKeyInput('');
+                          setStatusMsg('API 키가 삭제되었습니다.');
+                          setTimeout(() => setStatusMsg(null), 2000);
+                        }}
+                        className="px-2.5 py-1 text-xs text-red-500 hover:text-red-700"
+                      >
+                        삭제
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        saveStoredGeminiApiKey(geminiKeyInput.trim());
+                        setStatusMsg('API 키가 성공적으로 저장되었습니다.');
+                        setTimeout(() => setStatusMsg(null), 2500);
+                      }}
+                      className="px-4 py-1.5 bg-[var(--primary)] hover:opacity-90 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>저장</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

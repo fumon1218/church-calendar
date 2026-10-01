@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Sparkles, FileText, X, Check, Loader2, AlertCircle, Trash2 } from 'lucide-react';
+import { Sparkles, FileText, X, Check, Loader2, AlertCircle, Trash2, Key, ExternalLink } from 'lucide-react';
 import { ChurchEvent, EventCategory } from '../types';
 import { CATEGORIES, CATEGORY_MAP } from '../data/categories';
+import { parseTextSchedule, getStoredGeminiApiKey, saveStoredGeminiApiKey } from '../utils/gemini';
 
 interface AITextModalProps {
   isOpen: boolean;
@@ -34,30 +35,43 @@ export const AITextModal: React.FC<AITextModalProps> = ({
   const [parsedEvents, setParsedEvents] = useState<ParsedItem[]>([]);
   const [summary, setSummary] = useState<string>('');
 
+  // API Key management
+  const [apiKey, setApiKey] = useState<string>(() => getStoredGeminiApiKey());
+  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(() => !getStoredGeminiApiKey());
+  const [inputApiKey, setInputApiKey] = useState<string>('');
+
   if (!isOpen) return null;
+
+  const handleSaveApiKey = () => {
+    if (!inputApiKey.trim()) return;
+    saveStoredGeminiApiKey(inputApiKey.trim());
+    setApiKey(inputApiKey.trim());
+    setShowApiKeyInput(false);
+    setInputApiKey('');
+    setErrorMessage(null);
+  };
 
   const handleAnalyze = async () => {
     if (!inputText.trim()) return;
+
+    const currentKey = apiKey || getStoredGeminiApiKey();
+    if (!currentKey && window.location.hostname.includes('github.io')) {
+      setShowApiKeyInput(true);
+      setErrorMessage('AI 일정 추출을 위해 Gemini API 키가 필요합니다. 아래 입력창에 키를 입력해주세요.');
+      return;
+    }
 
     setIsLoading(true);
     setErrorMessage(null);
     setParsedEvents([]);
 
     try {
-      const res = await fetch('/api/ai/parse-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: inputText.trim(),
-          baseYear,
-          baseMonth: baseMonth + 1,
-        }),
+      const data = await parseTextSchedule({
+        text: inputText.trim(),
+        baseYear,
+        baseMonth: baseMonth + 1,
+        apiKey: currentKey,
       });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || '텍스트 분석 중 오류가 발생했습니다.');
-      }
 
       const items: ParsedItem[] = (data.events || []).map((ev: any, idx: number) => ({
         id: `parsed-txt-${idx}-${Date.now()}`,
@@ -73,7 +87,12 @@ export const AITextModal: React.FC<AITextModalProps> = ({
       setSummary(data.summary || `${items.length}개의 일정이 분석되었습니다.`);
     } catch (err: any) {
       console.error(err);
-      setErrorMessage(err.message || '텍스트 분석에 실패했습니다.');
+      if (err.message && err.message.includes('KEY_REQUIRED')) {
+        setShowApiKeyInput(true);
+        setErrorMessage('AI 기능을 사용하려면 Gemini API 키가 필요합니다. 아래에서 입력해주세요.');
+      } else {
+        setErrorMessage(err.message || '텍스트 분석에 실패했습니다.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -146,16 +165,82 @@ export const AITextModal: React.FC<AITextModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full text-[var(--ink-faint)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+              className={`p-1.5 rounded-full border transition-colors ${
+                apiKey
+                  ? 'border-[var(--line)] text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface)]'
+                  : 'border-amber-400 bg-amber-500/10 text-amber-600 dark:text-amber-400 animate-pulse'
+              }`}
+              title="Gemini API 키 설정"
+            >
+              <Key className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full text-[var(--ink-faint)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
         <div className="p-4 sm:p-6 flex-1 overflow-y-auto space-y-4">
+          {/* API Key Input Box */}
+          {(showApiKeyInput || !apiKey) && (
+            <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Gemini API 키 설정</span>
+                  {apiKey && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold">
+                      설정됨
+                    </span>
+                  )}
+                </span>
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1 font-medium"
+                >
+                  <span>구글에서 무료 키 발급받기</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                웹에서 AI 텍스트 분석을 위해 Google Gemini API 키가 필요합니다. 키를 입력하시면 이 기기의 브라우저에 안전하게 저장됩니다.
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="password"
+                  placeholder="AIzaSy... 로 시작하는 API 키 붙여넣기"
+                  value={inputApiKey}
+                  onChange={(e) => setInputApiKey(e.target.value)}
+                  className="flex-1 px-3 py-1.5 bg-white dark:bg-[var(--surface)] border border-amber-300 dark:border-amber-800 rounded-lg text-xs font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveApiKey}
+                  className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-xs shadow-xs"
+                >
+                  저장
+                </button>
+                {apiKey && (
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKeyInput(false)}
+                    className="px-2 py-1.5 text-amber-700 dark:text-amber-400 hover:underline text-xs"
+                  >
+                    닫기
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-semibold text-[var(--ink-soft)]">
