@@ -54,13 +54,47 @@ export const AIPhotoModal: React.FC<AIPhotoModalProps> = ({
 
   const processFile = (file: File) => {
     setErrorMessage(null);
-    setMimeType(file.type || 'image/jpeg');
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setImagePreview(result);
-      setImageBase64(result);
+      const rawDataUrl = event.target?.result as string;
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX_DIM = 1600;
+        let { width, height } = img;
+
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.88);
+          setImagePreview(compressed);
+          setImageBase64(compressed);
+          setMimeType('image/jpeg');
+        } else {
+          setImagePreview(rawDataUrl);
+          setImageBase64(rawDataUrl);
+          setMimeType(file.type || 'image/jpeg');
+        }
+      };
+      img.onerror = () => {
+        setImagePreview(rawDataUrl);
+        setImageBase64(rawDataUrl);
+        setMimeType(file.type || 'image/jpeg');
+      };
+      img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
   };

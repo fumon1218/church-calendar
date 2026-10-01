@@ -50,6 +50,72 @@ const CATEGORY_DESCRIPTION = `
 `;
 
 /**
+ * Dynamically query Google's ModelService.ListModels to find available models for the user's API key.
+ * This prevents 'model is not found' 404 errors completely.
+ */
+async function fetchSupportedModels(apiKey: string): Promise<Array<{ model: string; version: 'v1beta' | 'v1' }>> {
+  const versions: Array<'v1beta' | 'v1'> = ['v1beta', 'v1'];
+  const candidates: Array<{ model: string; version: 'v1beta' | 'v1' }> = [];
+
+  for (const ver of versions) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/${ver}/models?key=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url, {
+        headers: { 'x-goog-api-key': apiKey },
+      });
+      if (!res.ok) continue;
+
+      const data = await res.json();
+      if (Array.isArray(data?.models)) {
+        for (const item of data.models) {
+          const methods = item.supportedGenerationMethods || [];
+          if (methods.includes('generateContent')) {
+            const rawName = (item.name || '').replace(/^models\//, '');
+            if (rawName) {
+              candidates.push({ model: rawName, version: ver });
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore network errors during discovery
+    }
+  }
+
+  // Sort candidates by preference: flash models first, newer versions first
+  candidates.sort((a, b) => {
+    const score = (entry: { model: string; version: string }) => {
+      let s = 0;
+      const m = entry.model.toLowerCase();
+      if (m.includes('flash')) s += 100;
+      if (m.includes('2.5')) s += 50;
+      if (m.includes('2.0')) s += 40;
+      if (m.includes('1.5')) s += 30;
+      if (m.includes('latest')) s += 10;
+      if (m.includes('pro')) s += 20;
+      if (entry.version === 'v1beta') s += 5;
+      return s;
+    };
+    return score(b) - score(a);
+  });
+
+  return candidates;
+}
+
+const FALLBACK_CANDIDATES: Array<{ model: string; version: 'v1beta' | 'v1' }> = [
+  { model: 'gemini-2.0-flash', version: 'v1beta' },
+  { model: 'gemini-2.0-flash', version: 'v1' },
+  { model: 'gemini-1.5-flash-latest', version: 'v1beta' },
+  { model: 'gemini-1.5-flash-latest', version: 'v1' },
+  { model: 'gemini-1.5-flash', version: 'v1' },
+  { model: 'gemini-1.5-flash', version: 'v1beta' },
+  { model: 'gemini-2.0-flash-exp', version: 'v1beta' },
+  { model: 'gemini-1.5-pro', version: 'v1beta' },
+  { model: 'gemini-1.5-pro', version: 'v1' },
+  { model: 'gemini-1.5-flash-8b', version: 'v1beta' },
+];
+
+/**
  * Call Gemini API directly from browser or fallback to backend if available
  */
 async function callGeminiDirect(
@@ -57,12 +123,26 @@ async function callGeminiDirect(
   parts: any[],
   systemInstruction?: string
 ): Promise<string> {
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  // 1. Try to discover supported models for this specific API key
+  let candidateList = await fetchSupportedModels(apiKey);
+
+  if (candidateList.length === 0) {
+    candidateList = FALLBACK_CANDIDATES;
+  } else {
+    // Append fallback list at the end for resilience
+    const existing = new Set(candidateList.map((c) => `${c.version}/${c.model}`));
+    for (const fb of FALLBACK_CANDIDATES) {
+      if (!existing.has(`${fb.version}/${fb.model}`)) {
+        candidateList.push(fb);
+      }
+    }
+  }
+
   let lastError: Error | null = null;
 
-  for (const model of models) {
+  for (const { model, version } of candidateList) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const url = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const payload: any = {
         contents: [
           {
@@ -84,7 +164,10 @@ async function callGeminiDirect(
 
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
         body: JSON.stringify(payload),
       });
 
@@ -102,18 +185,37 @@ async function callGeminiDirect(
       return text;
     } catch (err: any) {
       lastError = err;
-      // If error is about model not found, try next model
-      if (err.message && (err.message.includes('not found') || err.message.includes('404'))) {
-        continue;
+      const msg = err.message || '';
+
+      // If invalid API key, throw immediately so user knows to fix key
+      if (
+        msg.includes('API key not valid') ||
+        msg.includes('PERMISSION_DENIED') ||
+        msg.includes('The provided API key has expired')
+      ) {
+        throw new Error('Gemini API 키가 유효하지 않습니다. Google AI Studio에서 올바른 키를 확인해주세요.');
       }
-      // For auth errors or invalid key, throw immediately
-      if (err.message && (err.message.includes('API key') || err.message.includes('403') || err.message.includes('400'))) {
-        throw err;
+
+      // If quota exceeded, give friendly message
+      if (msg.includes('RESOURCE_EXHAUSTED') || msg.includes('Quota exceeded')) {
+        throw new Error('Gemini API 무료 사용 할당량이 초과되었습니다. 잠시 후(1분 뒤) 다시 시도해주세요.');
+      }
+
+      // For model not found or unsupported method, continue trying next candidate
+      if (
+        msg.includes('not found') ||
+        msg.includes('404') ||
+        msg.includes('not supported')
+      ) {
+        continue;
       }
     }
   }
 
-  throw lastError || new Error('Gemini API 호출에 실패했습니다.');
+  throw (
+    lastError ||
+    new Error('현재 사용 중인 API 키에서 지원 가능한 Gemini 모델을 찾을 수 없습니다. Google AI Studio에서 키를 재발급 받아보세요.')
+  );
 }
 
 /**
